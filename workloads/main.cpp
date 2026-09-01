@@ -117,10 +117,7 @@ int main(int argc, char** argv) {
 
     if (mode != "native") fail("unknown --mode " + mode);
 
-    const auto start = std::chrono::steady_clock::now();
-    const uint64_t checksum = workload->native(params);
-    const double seconds =
-        std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    const NativeResult native = workload->native(params);
 
     Json result = Json::object();
     result.set("workload", Json::string(workload->name));
@@ -130,8 +127,8 @@ int main(int argc, char** argv) {
     result.set("stride", Json::number(static_cast<double>(params.stride)));
     result.set("iterations", Json::number(static_cast<double>(params.iterations)));
     result.set("seed", Json::number(static_cast<double>(params.seed)));
-    result.set("seconds", Json::number(seconds));
-    result.set("checksum", Json::string(std::to_string(checksum)));
+    result.set("seconds", Json::number(native.seconds));
+    result.set("checksum", Json::string(std::to_string(native.checksum)));
     std::cout << result.dump();
     return 0;
   } catch (const std::exception& e) {

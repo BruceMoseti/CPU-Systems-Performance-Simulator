@@ -9,6 +9,7 @@
 // kernel from drifting apart.
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -25,13 +26,30 @@ struct Params {
   uint64_t seed = 12345;
 };
 
+struct NativeResult {
+  // A checksum, so the optimiser cannot delete the kernel.
+  uint64_t checksum = 0;
+  // Kernel loop only. Allocating and filling the array is excluded because the
+  // trace does not describe it either, and for the shorter kernels that setup
+  // would otherwise dominate the measurement.
+  double seconds = 0.0;
+};
+
 struct Workload {
   const char* name;
   const char* description;
   void (*emit)(TraceWriter& out, const Params& params);
-  // Returns a checksum so that the optimiser cannot delete the kernel.
-  uint64_t (*native)(const Params& params);
+  NativeResult (*native)(const Params& params);
 };
+
+template <typename Kernel>
+NativeResult time_kernel(Kernel&& kernel) {
+  const auto start = std::chrono::steady_clock::now();
+  const uint64_t checksum = kernel();
+  const double seconds =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+  return {checksum, seconds};
+}
 
 const std::vector<Workload>& registry();
 const Workload* find(const std::string& name);
@@ -57,15 +75,15 @@ inline uint64_t next_random(uint64_t& state) {
 }
 
 void emit_sequential(TraceWriter& out, const Params& params);
-uint64_t native_sequential(const Params& params);
+NativeResult native_sequential(const Params& params);
 void emit_random_access(TraceWriter& out, const Params& params);
-uint64_t native_random_access(const Params& params);
+NativeResult native_random_access(const Params& params);
 void emit_pointer_chase(TraceWriter& out, const Params& params);
-uint64_t native_pointer_chase(const Params& params);
+NativeResult native_pointer_chase(const Params& params);
 void emit_strided(TraceWriter& out, const Params& params);
-uint64_t native_strided(const Params& params);
+NativeResult native_strided(const Params& params);
 void emit_matrix(TraceWriter& out, const Params& params);
-uint64_t native_matrix(const Params& params);
+NativeResult native_matrix(const Params& params);
 
 // Builds the single-cycle permutation used by the pointer chase, identically in
 // both modes.

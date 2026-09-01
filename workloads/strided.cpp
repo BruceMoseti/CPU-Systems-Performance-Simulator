@@ -25,19 +25,21 @@ void emit_strided(TraceWriter& out, const Params& params) {
   }
 }
 
-uint64_t native_strided(const Params& params) {
+NativeResult native_strided(const Params& params) {
   const uint64_t step = params.stride / kElementSize;
   std::vector<uint64_t> array(params.n * step);
   for (uint64_t i = 0; i < array.size(); ++i) array[i] = i;
 
-  uint64_t state = params.seed | 1;
-  uint64_t sum = 0;
-  const uint64_t total = params.n * params.iterations;
-  for (uint64_t i = 0; i < total; ++i) {
-    const uint64_t index = next_random(state) % params.n;
-    sum += array[index * step];
-  }
-  return sum;
+  return time_kernel([&] {
+    uint64_t state = params.seed | 1;
+    uint64_t sum = 0;
+    const uint64_t total = params.n * params.iterations;
+    for (uint64_t i = 0; i < total; ++i) {
+      const uint64_t index = next_random(state) % params.n;
+      sum += array[index * step];
+    }
+    return sum;
+  });
 }
 
 }  // namespace perfsim::workloads

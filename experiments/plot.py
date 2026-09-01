@@ -10,6 +10,7 @@ Figures land in results/figures/.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 import matplotlib
@@ -314,7 +315,44 @@ def figure_stall_breakdown() -> None:
     save(figure, "stall_breakdown")
 
 
+def figure_latency_curve() -> None:
+    """The host's real memory hierarchy, measured by a dependent pointer chase."""
+    path = perfsim.RESULTS / "latency_curve.csv"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} is missing; run: python3 experiments/validate.py"
+        )
+    frame = pd.read_csv(path)
+    validation = json.loads((perfsim.RESULTS / "validation.json").read_text())
+
+    figure, axis = plt.subplots(figsize=(8, 4.4))
+    axis.plot(frame["working_set_kb"], frame["cycles_per_hop"], marker="o", color="#1f77b4")
+    axis.set_xscale("log", base=2)
+    axis.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+    axis.set_xlabel("Working set (KB)")
+    axis.set_ylabel("Cycles per dependent load")
+    axis.grid(alpha=0.3)
+
+    # Mark where the host says each cache level ends; the steps should line up.
+    for cache in validation["host"]["caches"]:
+        if cache["type"] == "Instruction":
+            continue
+        axis.axvline(cache["size_kb"], color="#c1121f", linestyle="--", linewidth=1)
+        axis.text(
+            cache["size_kb"], axis.get_ylim()[1] * 0.95,
+            f" L{cache['level']} {cache['size_kb']} KB", fontsize=8, color="#c1121f",
+            ha="left", va="top", rotation=90,
+        )
+
+    axis.set_title(
+        f"Measured memory hierarchy of {validation['host']['model_name']}\n"
+        f"(each step is a level of the real cache hierarchy)"
+    )
+    save(figure, "latency_curve")
+
+
 FIGURES = {
+    "latency_curve": figure_latency_curve,
     "l1_capacity": figure_l1_capacity,
     "l2_capacity": figure_l2_capacity,
     "associativity": figure_associativity,

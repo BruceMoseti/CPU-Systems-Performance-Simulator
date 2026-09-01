@@ -39,6 +39,11 @@ add_executable(tracegen
 )
 target_link_libraries(tracegen PRIVATE perfsim_core)
 target_include_directories(tracegen PRIVATE workloads)
+# The traces describe a scalar instruction stream: one load per element. If the
+# compiler vectorises the native kernels then the hardware runs a different
+# program from the one the simulator is given, and comparing their runtimes says
+# nothing. Keeping the native kernels scalar is what makes validate.py valid.
+target_compile_options(tracegen PRIVATE -fno-tree-vectorize)
 
 add_executable(perfcount tools/perfcount.cpp)
 target_link_libraries(perfcount PRIVATE perfsim_core)

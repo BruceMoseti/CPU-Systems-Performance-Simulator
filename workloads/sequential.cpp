@@ -17,15 +17,17 @@ void emit_sequential(TraceWriter& out, const Params& params) {
   }
 }
 
-uint64_t native_sequential(const Params& params) {
+NativeResult native_sequential(const Params& params) {
   std::vector<uint64_t> array(params.n);
   for (uint64_t i = 0; i < params.n; ++i) array[i] = i;
 
-  uint64_t sum = 0;
-  for (uint64_t iteration = 0; iteration < params.iterations; ++iteration) {
-    for (uint64_t i = 0; i < params.n; ++i) sum += array[i];
-  }
-  return sum;
+  return time_kernel([&] {
+    uint64_t sum = 0;
+    for (uint64_t iteration = 0; iteration < params.iterations; ++iteration) {
+      for (uint64_t i = 0; i < params.n; ++i) sum += array[i];
+    }
+    return sum;
+  });
 }
 
 }  // namespace perfsim::workloads

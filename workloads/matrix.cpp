@@ -62,7 +62,7 @@ void emit_matrix(TraceWriter& out, const Params& params) {
   }
 }
 
-uint64_t native_matrix(const Params& params) {
+NativeResult native_matrix(const Params& params) {
   const uint64_t n = params.n;
   const uint64_t block = effective_block(params);
 
@@ -77,30 +77,32 @@ uint64_t native_matrix(const Params& params) {
     b[i] = next_random(state) & 0xFFFF;
   }
 
-  for (uint64_t iteration = 0; iteration < params.iterations; ++iteration) {
-    for (uint64_t ii = 0; ii < n; ii += block) {
-      for (uint64_t jj = 0; jj < n; jj += block) {
-        for (uint64_t kk = 0; kk < n; kk += block) {
-          const uint64_t i_end = std::min(ii + block, n);
-          const uint64_t j_end = std::min(jj + block, n);
-          const uint64_t k_end = std::min(kk + block, n);
-          for (uint64_t i = ii; i < i_end; ++i) {
-            for (uint64_t j = jj; j < j_end; ++j) {
-              uint64_t sum = c[i * n + j];
-              for (uint64_t k = kk; k < k_end; ++k) {
-                sum += a[i * n + k] * b[k * n + j];
+  NativeResult result = time_kernel([&] {
+    for (uint64_t iteration = 0; iteration < params.iterations; ++iteration) {
+      for (uint64_t ii = 0; ii < n; ii += block) {
+        for (uint64_t jj = 0; jj < n; jj += block) {
+          for (uint64_t kk = 0; kk < n; kk += block) {
+            const uint64_t i_end = std::min(ii + block, n);
+            const uint64_t j_end = std::min(jj + block, n);
+            const uint64_t k_end = std::min(kk + block, n);
+            for (uint64_t i = ii; i < i_end; ++i) {
+              for (uint64_t j = jj; j < j_end; ++j) {
+                uint64_t sum = c[i * n + j];
+                for (uint64_t k = kk; k < k_end; ++k) {
+                  sum += a[i * n + k] * b[k * n + j];
+                }
+                c[i * n + j] = sum;
               }
-              c[i * n + j] = sum;
             }
           }
         }
       }
     }
-  }
+    return uint64_t{0};
+  });
 
-  uint64_t checksum = 0;
-  for (uint64_t i = 0; i < n * n; ++i) checksum += c[i];
-  return checksum;
+  for (uint64_t i = 0; i < n * n; ++i) result.checksum += c[i];
+  return result;
 }
 
 }  // namespace perfsim::workloads

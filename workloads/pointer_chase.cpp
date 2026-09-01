@@ -38,16 +38,19 @@ void emit_pointer_chase(TraceWriter& out, const Params& params) {
   }
 }
 
-uint64_t native_pointer_chase(const Params& params) {
+NativeResult native_pointer_chase(const Params& params) {
   const std::vector<uint64_t> next = build_chase_permutation(params.n, params.seed);
-  uint64_t node = 0;
-  uint64_t visited = 0;
-  const uint64_t hops = params.n * params.iterations;
-  for (uint64_t i = 0; i < hops; ++i) {
-    node = next[node];
-    visited += node;
-  }
-  return visited;
+
+  return time_kernel([&] {
+    uint64_t node = 0;
+    uint64_t visited = 0;
+    const uint64_t hops = params.n * params.iterations;
+    for (uint64_t i = 0; i < hops; ++i) {
+      node = next[node];
+      visited += node;
+    }
+    return visited;
+  });
 }
 
 }  // namespace perfsim::workloads

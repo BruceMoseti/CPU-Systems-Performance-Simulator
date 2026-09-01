@@ -22,18 +22,20 @@ void emit_random_access(TraceWriter& out, const Params& params) {
   }
 }
 
-uint64_t native_random_access(const Params& params) {
+NativeResult native_random_access(const Params& params) {
   std::vector<uint64_t> array(params.n);
   for (uint64_t i = 0; i < params.n; ++i) array[i] = i;
 
-  uint64_t state = params.seed | 1;
-  uint64_t sum = 0;
-  const uint64_t total = params.n * params.iterations;
-  for (uint64_t i = 0; i < total; ++i) {
-    const uint64_t index = next_random(state) % params.n;
-    sum += array[index];
-  }
-  return sum;
+  return time_kernel([&] {
+    uint64_t state = params.seed | 1;
+    uint64_t sum = 0;
+    const uint64_t total = params.n * params.iterations;
+    for (uint64_t i = 0; i < total; ++i) {
+      const uint64_t index = next_random(state) % params.n;
+      sum += array[index];
+    }
+    return sum;
+  });
 }
 
 }  // namespace perfsim::workloads
