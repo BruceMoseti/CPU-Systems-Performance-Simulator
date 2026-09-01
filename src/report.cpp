@@ -87,7 +87,9 @@ std::string format_report(const Results& results) {
   out << "\nPerformance\n-----------\n";
   out << sprintf_str("  %-26s %14s\n", "Instructions:", with_commas(cpu.instructions).c_str());
   out << sprintf_str("  %-26s %14s\n", "Cycles:", with_commas(cpu.cycles).c_str());
-  out << sprintf_str("  %-26s %14.2f\n", "IPC:", results.ipc);
+  // Three decimals because a latency-bound workload can sit below 0.02 IPC,
+  // where two decimals hide every difference worth seeing.
+  out << sprintf_str("  %-26s %14.3f\n", "IPC:", results.ipc);
   out << sprintf_str("  %-26s %14.2f\n", "CPI:", results.cpi);
   out << sprintf_str("  %-26s %14s\n", "Execution time:", format_time(results.seconds).c_str());
 
