@@ -456,25 +456,30 @@ growing working sets.
 ![Measured latency curve](results/figures/latency_curve.png)
 
 The steps line up with what the host reports: 3 cycles inside its 48 KB L1d,
-5–12 cycles through its 2 MB L2, and 50–106 cycles beyond it. Those measured
-latencies are then fed into the model along with the detected geometry.
+5–12 cycles through its 2 MB L2, and 47–103 cycles beyond it. Those measured
+latencies are then fed into the model along with the detected geometry, giving a
+48 KB 12-way 3-cycle L1, a 2 MB 16-way 12-cycle L2 and a 64-cycle level behind
+them.
 
 Host: Intel Xeon, 2.4 GHz, 48 KB 12-way L1d, 2 MB 16-way L2, large shared L3.
+The runtimes below are one run's measurements from
+[results/validation.json](results/validation.json) and move by a few percent
+between runs.
 
 | workload | native | model | model/native |
 | --- | --- | --- | --- |
-| `pointer_chase` | 26.1 ms | 27.7 ms | **1.06×** |
-| `sequential` | 0.3 ms | 0.4 ms | 1.32× |
-| `random_access` | 2.8 ms | 1.7 ms | 0.61× |
+| `pointer_chase` | 26.1 ms | 27.1 ms | **1.04×** |
+| `sequential` | 0.3 ms | 0.4 ms | 1.37× |
+| `random_access` | 2.7 ms | 1.7 ms | 0.61× |
 | `matrix_naive` | 5.7 ms | 3.7 ms | 0.65× |
-| `matrix_blocked` | 2.1 ms | 3.7 ms | 1.82× |
+| `matrix_blocked` | 2.1 ms | 3.7 ms | 1.79× |
 | `strided` | 2.5 ms | 0.7 ms | 0.29× |
 
 ### What the model captures
 
-**Pure latency, to within 6%.** `pointer_chase` is the case the model describes
+**Pure latency, to within 4%.** `pointer_chase` is the case the model describes
 directly — one exposed miss at a time — and it predicts a 26.1 ms measured
-runtime as 27.7 ms. The measured latency curve is also reproduced by the model's
+runtime as 27.1 ms. The measured latency curve is also reproduced by the model's
 own hierarchy, which is a consistency check on the cache geometry and the
 serial-lookup latency assumption.
 
@@ -486,20 +491,20 @@ order and identifies the correct qualitative reason.
 **Absolute compute throughput.** For a compute-bound workload the prediction is
 only as good as two guesses: the issue width, and the estimated instruction count
 per iteration baked into the trace generators. `matrix_blocked` is over-predicted
-by 1.82× because the host sustains more work per cycle than a 4-wide machine with
+by 1.79× because the host sustains more work per cycle than a 4-wide machine with
 5 instructions per multiply-add. `base_cpi` exists to calibrate this, and this
 measurement is what you would calibrate it against.
 
 **Misses that stop at L2 are hidden too completely.** The three workloads whose
 misses are absorbed by L2 are all over-predicted: `strided` (0.29×),
-`matrix_naive` (0.65×), `matrix_blocked` (1.82× the other way). The sharpest
+`matrix_naive` (0.65×), `matrix_blocked` (1.79× the other way). The sharpest
 form of this:
 
 | | native | model |
 | --- | --- | --- |
-| naive / blocked matrix multiply | 2.78× | 0.99× |
+| naive / blocked matrix multiply | 2.74× | 0.99× |
 
-On real hardware, blocking is worth 2.78× at this size. The model says the two are
+On real hardware, blocking is worth 2.74× at this size. The model says the two are
 equivalent, because with a 2 MB L2 holding the working set, every L1 miss becomes
 a 12-cycle L2 hit that 16 MSHRs overlap away. Three things could explain the
 gap — no TLB model (the naive nest walks `B` with a 1536-byte stride, touching 72
@@ -509,7 +514,7 @@ discriminate between them**, and cannot be read here; that is the specific reaso
 `tools/perfcount.cpp` exists rather than being deleted as unused.
 
 **Prefetching.** The model has none, so it under-predicts sequential performance:
-measured `random_access`/`sequential` is 8.75×, the model says 4.06×. This is
+measured `random_access`/`sequential` is 8.94×, the model says 3.97×. This is
 also why `sequential` reports "memory-level parallelism" as its bottleneck at
 87.5% L1 hit rate — without a prefetcher, 1-in-8 accesses miss and the 16 MSHRs
 throttle a workload that real hardware streams comfortably.
