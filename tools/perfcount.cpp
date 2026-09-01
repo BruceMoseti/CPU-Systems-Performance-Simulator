@@ -17,6 +17,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -59,17 +60,38 @@ constexpr char kUsage[] =
     "perfcount - measure hardware counters for a command\n"
     "\n"
     "Usage:\n"
-    "  perfcount -- <command> [args...]\n"
+    "  perfcount [--output <path>] -- <command> [args...]\n"
     "\n"
     "Prints a JSON object with the counters the host exposes plus wall-clock\n"
     "time. Hardware counters are unavailable inside most virtual machines; the\n"
-    "\"unavailable\" field explains why when that happens.\n";
+    "\"unavailable\" field explains why when that happens.\n"
+    "\n"
+    "  --output <path>   write the JSON here instead of stdout. Use this when the\n"
+    "                    measured command writes to stdout itself, otherwise the\n"
+    "                    two outputs interleave and neither can be parsed.\n";
 
 }  // namespace
 
 int main(int argc, char** argv) {
+  std::string output_path;
   int command_start = 1;
-  if (argc > 1 && std::string(argv[1]) == "--") command_start = 2;
+  while (command_start < argc) {
+    const std::string arg = argv[command_start];
+    if (arg == "--") {
+      ++command_start;
+      break;
+    }
+    if (arg == "--output" && command_start + 1 < argc) {
+      output_path = argv[command_start + 1];
+      command_start += 2;
+      continue;
+    }
+    if (arg == "--help" || arg == "-h") {
+      std::cout << kUsage;
+      return 0;
+    }
+    break;  // start of the command to measure
+  }
   if (command_start >= argc) {
     std::cerr << kUsage;
     return 1;
@@ -171,6 +193,17 @@ int main(int argc, char** argv) {
   }
   root.set("counters", std::move(values));
   root.set("unavailable", std::move(unavailable));
-  std::cout << root.dump();
+
+  const std::string text = root.dump();
+  if (output_path.empty()) {
+    std::cout << text;
+  } else {
+    std::ofstream out(output_path, std::ios::binary);
+    if (!out) {
+      std::cerr << "perfcount: cannot write to " << output_path << "\n";
+      return 1;
+    }
+    out << text;
+  }
   return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
 }

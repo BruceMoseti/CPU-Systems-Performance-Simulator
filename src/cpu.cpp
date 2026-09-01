@@ -1,7 +1,6 @@
 #include "cpu.hpp"
 
 #include <algorithm>
-#include <numeric>
 
 namespace perfsim {
 

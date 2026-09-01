@@ -1,7 +1,6 @@
 #include "trace.hpp"
 
 #include <cstring>
-#include <stdexcept>
 
 namespace perfsim {
 namespace {
