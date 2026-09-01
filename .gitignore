@@ -1,0 +1,6 @@
+build/
+traces/*.trace
+__pycache__/
+*.pyc
+perf.data
+perf.data.old

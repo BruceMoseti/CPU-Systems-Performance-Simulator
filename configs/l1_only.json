@@ -1,0 +1,18 @@
+{
+  "cpu": {
+    "frequency_ghz": 3.5,
+    "issue_width": 4,
+    "base_cpi": 0.0,
+    "mshrs": 16
+  },
+  "l1": {
+    "size_kb": 32,
+    "line_size": 64,
+    "associativity": 8,
+    "latency_cycles": 4
+  },
+  "memory": {
+    "latency_cycles": 180,
+    "bandwidth_gbps": 50
+  }
+}
