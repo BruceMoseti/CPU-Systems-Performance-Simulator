@@ -14,6 +14,14 @@ add_compile_options(-Wall -Wextra)
 # frame pointers even in optimised builds.
 add_compile_options(-g -fno-omit-frame-pointer)
 
+# Enables gprof instrumentation. Kept as an option so the profiling build is
+# reproducible: cmake -S . -B build-profile -DPERFSIM_PROFILE=ON
+option(PERFSIM_PROFILE "Build with -pg so gprof can profile the simulator" OFF)
+if(PERFSIM_PROFILE)
+  add_compile_options(-pg)
+  add_link_options(-pg)
+endif()
+
 add_library(perfsim_core STATIC
   src/cache.cpp
   src/config.cpp

@@ -77,12 +77,17 @@ class Cpu {
   void access(uint64_t address, bool is_write, bool dependent);
   void stall(uint64_t cycles, StallBucket bucket);
   void stall_split(uint64_t cycles, StallBucket bucket, double queue_fraction);
+  void sift_down(size_t root);
 
   MemoryHierarchy& hierarchy_;
   double compute_cpi_;
   // Fractional cycle carried between instructions so that, for example, four
   // instructions on a 4-wide machine cost exactly one cycle.
   double compute_debt_ = 0.0;
+  // A binary min-heap on free_at, so the entry that frees up soonest is always
+  // at index 0. Every miss needs that entry, and a linear scan over it was the
+  // single hottest loop in the simulator. MSHRs are interchangeable, so which
+  // slot a miss lands in has no effect on the results.
   std::vector<Mshr> mshrs_;
   CpuStats stats_;
 };

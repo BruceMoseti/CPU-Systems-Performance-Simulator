@@ -44,21 +44,27 @@ class Cache {
   const CacheStats& stats() const { return stats_; }
 
  private:
-  struct Line {
-    uint64_t tag = 0;
-    uint64_t last_used = 0;
-    bool valid = false;
-    bool dirty = false;
-  };
+  // Line state is held as parallel arrays rather than an array of structs. The
+  // tag scan is the simulator's hottest loop, and this way the tags of one set
+  // are contiguous: an 8-way lookup reads a single 64-byte host cache line
+  // instead of striding over three.
+  //
+  // An empty way is marked by an all-ones tag. Because line_size is at least 4,
+  // a real line address is address >> 2 or smaller and so always has its top two
+  // bits clear, which makes all-ones unreachable and safe as a sentinel.
+  static constexpr uint64_t kEmptyTag = ~uint64_t{0};
 
   uint64_t set_index(uint64_t line_address) const {
     return set_mask_ != 0 ? (line_address & set_mask_) : line_address % set_count_;
   }
 
   // Returns the way holding line_address within its set, or -1 when absent.
-  int find_way(uint64_t set, uint64_t line_address) const;
-  // Chooses an invalid way, or the least recently used one when the set is full.
-  int select_victim(uint64_t set) const;
+  int find_way(size_t base, uint64_t line_address) const;
+  // Empty ways carry timestamp 0, below every real one, so choosing the oldest
+  // timestamp naturally prefers an empty way and needs no separate check.
+  int select_victim(size_t base) const;
+  // Shared tail of access() and install_writeback() for the miss path.
+  CacheResult replace(size_t base, uint64_t line_address, bool dirty);
 
   CacheConfig config_;
   uint64_t line_shift_ = 0;
@@ -66,7 +72,9 @@ class Cache {
   uint64_t set_mask_ = 0;  // non-zero only when set_count_ is a power of two
   uint32_t associativity_ = 1;
   uint64_t tick_ = 0;
-  std::vector<Line> lines_;
+  std::vector<uint64_t> tags_;
+  std::vector<uint64_t> used_;
+  std::vector<uint8_t> dirty_;
   CacheStats stats_;
 };
 

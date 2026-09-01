@@ -28,6 +28,20 @@ void Cpu::stall_split(uint64_t cycles, StallBucket bucket, double queue_fraction
   stall(std::min(queued, cycles), StallBucket::Bandwidth);
 }
 
+void Cpu::sift_down(size_t root) {
+  const size_t count = mshrs_.size();
+  while (true) {
+    size_t smallest = root;
+    const size_t left = 2 * root + 1;
+    const size_t right = left + 1;
+    if (left < count && mshrs_[left].free_at < mshrs_[smallest].free_at) smallest = left;
+    if (right < count && mshrs_[right].free_at < mshrs_[smallest].free_at) smallest = right;
+    if (smallest == root) return;
+    std::swap(mshrs_[root], mshrs_[smallest]);
+    root = smallest;
+  }
+}
+
 void Cpu::issue(uint64_t instructions) {
   stats_.instructions += instructions;
   compute_debt_ += static_cast<double>(instructions) * compute_cpi_;
@@ -64,17 +78,12 @@ void Cpu::access(uint64_t address, bool is_write, bool dependent) {
 
   // The miss holds an MSHR until its fill completes. Reusing the entry that
   // frees up soonest models a fully associative MSHR file.
-  size_t slot = 0;
-  for (size_t i = 1; i < mshrs_.size(); ++i) {
-    if (mshrs_[i].free_at < mshrs_[slot].free_at) slot = i;
+  const uint64_t earliest_free = mshrs_[0].free_at;
+  if (earliest_free > stats_.cycles) {
+    stall_split(earliest_free - stats_.cycles, StallBucket::Mshr, mshrs_[0].queue_fraction);
   }
-  if (mshrs_[slot].free_at > stats_.cycles) {
-    stall_split(mshrs_[slot].free_at - stats_.cycles, StallBucket::Mshr,
-                mshrs_[slot].queue_fraction);
-  }
-  mshrs_[slot].free_at = stats_.cycles + outcome.latency;
-  mshrs_[slot].bucket = bucket;
-  mshrs_[slot].queue_fraction = queue_fraction;
+  mshrs_[0] = Mshr{stats_.cycles + outcome.latency, bucket, queue_fraction};
+  sift_down(0);
 
   if (dependent) stall_split(outcome.latency, bucket, queue_fraction);
 }
@@ -98,17 +107,15 @@ void Cpu::execute(const TraceRecord& record) {
 
 void Cpu::drain() {
   // Walk the outstanding fills in completion order so the exposed tail latency
-  // is charged to whichever level supplied each line.
-  std::vector<size_t> order(mshrs_.size());
-  std::iota(order.begin(), order.end(), 0);
-  std::sort(order.begin(), order.end(),
-            [this](size_t a, size_t b) { return mshrs_[a].free_at < mshrs_[b].free_at; });
-  for (size_t slot : order) {
-    if (mshrs_[slot].free_at > stats_.cycles) {
-      stall_split(mshrs_[slot].free_at - stats_.cycles, mshrs_[slot].bucket,
-                  mshrs_[slot].queue_fraction);
+  // is charged to whichever level supplied each line. Sorting breaks the heap
+  // ordering, which is fine because every entry is cleared straight afterwards.
+  std::sort(mshrs_.begin(), mshrs_.end(),
+            [](const Mshr& a, const Mshr& b) { return a.free_at < b.free_at; });
+  for (Mshr& mshr : mshrs_) {
+    if (mshr.free_at > stats_.cycles) {
+      stall_split(mshr.free_at - stats_.cycles, mshr.bucket, mshr.queue_fraction);
     }
-    mshrs_[slot].free_at = 0;
+    mshr.free_at = 0;
   }
 
   // A trace shorter than the issue width would otherwise finish in zero cycles.

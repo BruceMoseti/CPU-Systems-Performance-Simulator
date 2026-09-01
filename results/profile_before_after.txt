@@ -1,0 +1,52 @@
+gprof flat profiles of the simulator itself, replaying traces/matrix_naive.trace
+(21.3M records) on an Intel Xeon at 2.4 GHz.
+
+Reproduce with:
+  cmake -S . -B build-profile -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_COMPILER=g++ -DPERFSIM_PROFILE=ON
+  cmake --build build-profile -j
+  cd /tmp && ./build-profile/perfsim --config configs/baseline.json \
+        --trace traces/matrix_naive.trace --quiet
+  gprof ./build-profile/perfsim gmon.out
+
+Note that -pg adds per-call instrumentation, so absolute ns/call figures are
+inflated. The ranking and the relative change are what matter.
+
+
+BEFORE (commit 2f3d688)
+=======================
+  %   cumulative   self              self     total
+ time   seconds   seconds    calls  ns/call  ns/call  name
+ 40.91      0.27     0.27 21468360    12.58    12.58  perfsim::Cache::access(unsigned long, bool)
+ 22.73      0.42     0.15 14229504    10.54    33.73  perfsim::Cpu::access(unsigned long, bool, bool)
+ 13.64      0.51     0.09 120766543    0.75     0.75  perfsim::TraceReader::refill()
+ 12.12      0.59     0.08 21307393     3.75     7.98  perfsim::TraceReader::next(perfsim::TraceRecord&)
+  9.09      0.65     0.06 14229504     4.22    23.19  perfsim::MemoryHierarchy::access(unsigned long, bool, unsigned long)
+
+Three findings:
+  1. Cache::access dominates. Line state was an array of 24-byte structs, so an
+     8-way tag scan strided across three host cache lines.
+  2. Cpu::access spent its time scanning all 16 MSHRs linearly to find the entry
+     that frees up soonest. 14.2M misses x 16 entries.
+  3. refill() was called 120.8M times: once per character of the trace, roughly
+     5.7 characters per record.
+
+
+AFTER (this commit)
+===================
+  %   cumulative   self              self     total
+ time   seconds   seconds    calls  ns/call  ns/call  name
+ 48.00      0.12     0.12 21307393     5.63     5.63  perfsim::TraceReader::next(perfsim::TraceRecord&)
+ 20.00      0.17     0.05 21468360     2.33     2.33  perfsim::Cache::access(unsigned long, bool)
+ 20.00      0.22     0.05 14192640     3.52     9.14  perfsim::Cpu::access(unsigned long, bool, bool)
+  8.00      0.24     0.02 14229504     1.41     4.92  perfsim::MemoryHierarchy::access(unsigned long, bool, unsigned long)
+  4.00      0.25     0.01  7238856     1.38     1.38  perfsim::Cpu::sift_down(unsigned long)
+
+Total profiled time fell from 0.66 s to 0.25 s. Per-call self time:
+  Cache::access   12.58 -> 2.33 ns  (parallel arrays: one host cache line per scan)
+  Cpu::access     10.54 -> 3.52 ns  (binary min-heap instead of a linear scan)
+  trace parsing    ~8.0 -> 5.63 ns  (buffer once per record, not per character)
+
+Text parsing is now the largest single cost. The next step would be a binary
+trace format, which is a format change rather than an optimisation of existing
+code, so it is left undone.

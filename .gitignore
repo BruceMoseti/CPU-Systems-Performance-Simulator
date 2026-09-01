@@ -1,4 +1,4 @@
-build/
+build*/
 traces/*.trace
 traces/*.params
 __pycache__/

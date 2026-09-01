@@ -46,108 +46,124 @@ TraceReader::~TraceReader() {
   if (owns_file_ && file_ != nullptr) std::fclose(file_);
 }
 
-int TraceReader::refill() {
-  if (pos_ < end_) return buffer_[pos_];
-  end_ = std::fread(buffer_.data(), 1, buffer_.size(), file_);
+void TraceReader::fail(const char* reason) const {
+  throw TraceError(path_ + ":" + std::to_string(line_) + ": " + reason);
+}
+
+size_t TraceReader::ensure(size_t wanted) {
+  if (end_ - pos_ >= wanted || exhausted_) return end_ - pos_;
+
+  const size_t remaining = end_ - pos_;
+  if (remaining > 0) std::memmove(buffer_.data(), buffer_.data() + pos_, remaining);
   pos_ = 0;
-  if (end_ == 0) return -1;
-  return buffer_[pos_];
+  end_ = remaining;
+  // Loops because a pipe can return a short read even when more is coming.
+  while (end_ < wanted) {
+    const size_t got = std::fread(buffer_.data() + end_, 1, buffer_.size() - end_, file_);
+    if (got == 0) {
+      exhausted_ = true;
+      break;
+    }
+    end_ += got;
+  }
+  return end_ - pos_;
+}
+
+void TraceReader::skip_comment() {
+  while (ensure(1) > 0) {
+    const char* const begin = buffer_.data();
+    const char* p = begin + pos_;
+    const char* const limit = begin + end_;
+    while (p < limit && *p != '\n') ++p;
+    if (p < limit) {
+      ++p;
+      ++line_;
+      pos_ = static_cast<size_t>(p - begin);
+      return;
+    }
+    pos_ = end_;
+  }
 }
 
 bool TraceReader::next(TraceRecord& record) {
+  // Longer than any valid record, so buffering this much means a whole record is
+  // present unless the file really has ended there.
+  constexpr size_t kMaxRecordBytes = 40;
+
   while (true) {
-    int c = refill();
-    if (c < 0) return false;
+    if (ensure(kMaxRecordBytes) == 0) return false;
+    const char* const begin = buffer_.data();
+    const char* const limit = begin + end_;
+    const char* p = begin + pos_;
 
-    // Skip blank lines, comments and leading whitespace.
-    if (c == '\n') {
-      ++pos_;
-      ++line_;
-      continue;
-    }
-    if (c == ' ' || c == '\t' || c == '\r') {
-      ++pos_;
-      continue;
-    }
-    if (c == '#') {
-      while (true) {
-        int skip = refill();
-        if (skip < 0) return false;
-        ++pos_;
-        if (skip == '\n') break;
+    while (p < limit) {
+      const char c = *p;
+      if (c == '\n') {
+        ++line_;
+      } else if (c != ' ' && c != '\t' && c != '\r') {
+        break;
       }
-      ++line_;
+      ++p;
+    }
+    pos_ = static_cast<size_t>(p - begin);
+    if (p == limit) continue;  // only whitespace so far: refill or finish
+
+    if (*p == '#') {
+      skip_comment();
       continue;
     }
 
-    const char op = static_cast<char>(c);
-    ++pos_;
-    switch (op) {
-      case 'R': record.type = RecordType::Read; break;
-      case 'W': record.type = RecordType::Write; break;
-      case 'L': record.type = RecordType::DependentRead; break;
-      case 'N': record.type = RecordType::Compute; break;
-      default:
-        throw TraceError(path_ + ":" + std::to_string(line_) + ": unknown record type '" + op +
-                         "'");
+    RecordType type;
+    switch (*p) {
+      case 'R': type = RecordType::Read; break;
+      case 'W': type = RecordType::Write; break;
+      case 'L': type = RecordType::DependentRead; break;
+      case 'N': type = RecordType::Compute; break;
+      default: fail("unknown record type");
     }
-
-    while (true) {
-      int space = refill();
-      if (space == ' ' || space == '\t') {
-        ++pos_;
-        continue;
-      }
-      break;
-    }
+    ++p;
+    while (p < limit && (*p == ' ' || *p == '\t')) ++p;
 
     bool hex = false;
-    int first = refill();
-    if (first == '0') {
-      ++pos_;
-      int prefix = refill();
-      if (prefix == 'x' || prefix == 'X') {
-        ++pos_;
-        hex = true;
-      }
-    } else if (first < 0) {
-      throw TraceError(path_ + ":" + std::to_string(line_) + ": record is missing its operand");
+    if (limit - p >= 2 && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+      hex = true;
+      p += 2;
     }
 
     uint64_t value = 0;
-    bool any_digits = !hex && first == '0';
-    while (true) {
-      int digit = refill();
-      if (digit < 0) break;
-      uint64_t d;
-      if (digit >= '0' && digit <= '9') {
-        d = static_cast<uint64_t>(digit - '0');
-      } else if (hex && digit >= 'a' && digit <= 'f') {
-        d = static_cast<uint64_t>(digit - 'a' + 10);
-      } else if (hex && digit >= 'A' && digit <= 'F') {
-        d = static_cast<uint64_t>(digit - 'A' + 10);
-      } else {
-        break;
+    const char* const digits = p;
+    if (hex) {
+      while (p < limit) {
+        const char c = *p;
+        uint64_t digit;
+        if (c >= '0' && c <= '9') {
+          digit = static_cast<uint64_t>(c - '0');
+        } else if (c >= 'a' && c <= 'f') {
+          digit = static_cast<uint64_t>(c - 'a' + 10);
+        } else if (c >= 'A' && c <= 'F') {
+          digit = static_cast<uint64_t>(c - 'A' + 10);
+        } else {
+          break;
+        }
+        value = (value << 4) | digit;
+        ++p;
       }
-      value = hex ? (value << 4) | d : value * 10 + d;
-      any_digits = true;
-      ++pos_;
-    }
-    if (!any_digits) {
-      throw TraceError(path_ + ":" + std::to_string(line_) + ": record is missing its operand");
-    }
-
-    // Consume the rest of the line.
-    while (true) {
-      int tail = refill();
-      if (tail < 0) break;
-      ++pos_;
-      if (tail == '\n') {
-        ++line_;
-        break;
+    } else {
+      while (p < limit && *p >= '0' && *p <= '9') {
+        value = value * 10 + static_cast<uint64_t>(*p - '0');
+        ++p;
       }
     }
+    if (p == digits) fail("record is missing its operand");
 
+    while (p < limit && *p != '\n') ++p;
+    if (p < limit) {
+      ++p;
+      ++line_;
+    }
+    pos_ = static_cast<size_t>(p - begin);
+
+    record.type = type;
     record.value = value;
     return true;
   }

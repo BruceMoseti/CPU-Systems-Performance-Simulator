@@ -53,7 +53,13 @@ class TraceReader {
   bool next(TraceRecord& record);
 
  private:
-  int refill();
+  // Guarantees that at least `wanted` bytes are buffered unless the file has
+  // ended, and returns how many are actually available. Records are short, so
+  // one call per record lets the parser work on raw pointers rather than
+  // re-checking the buffer on every character.
+  size_t ensure(size_t wanted);
+  void skip_comment();
+  [[noreturn]] void fail(const char* reason) const;
 
   std::string path_;
   std::FILE* file_ = nullptr;
@@ -61,6 +67,7 @@ class TraceReader {
   std::string buffer_;
   size_t pos_ = 0;
   size_t end_ = 0;
+  bool exhausted_ = false;
   uint64_t line_ = 1;
 };
 
