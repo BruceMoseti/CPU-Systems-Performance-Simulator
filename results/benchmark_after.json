@@ -4,51 +4,51 @@
   "engine": {
     "sequential": {
       "records": 20000000,
-      "wall_seconds": 0.45020142,
-      "records_per_second": 44424560.01
+      "wall_seconds": 0.45009495,
+      "records_per_second": 44435068.64
     },
     "random": {
       "records": 20000000,
-      "wall_seconds": 0.459801514,
-      "records_per_second": 43497029.46
+      "wall_seconds": 0.456210771,
+      "records_per_second": 43839385.81
     },
     "pointer_chase": {
       "records": 20000000,
-      "wall_seconds": 0.380931786,
-      "records_per_second": 52502838.4
+      "wall_seconds": 0.377714782,
+      "records_per_second": 52950006.07
     }
   },
   "replay": {
     "sequential": {
       "records": 2000000,
-      "wall_seconds": 0.031870338,
-      "records_per_second": 62754276.41
+      "wall_seconds": 0.032127973,
+      "records_per_second": 62251048.33
     },
     "random_access": {
       "records": 2000000,
-      "wall_seconds": 0.074825257,
-      "records_per_second": 26728942.61
+      "wall_seconds": 0.075288306,
+      "records_per_second": 26564550.41
     },
     "pointer_chase": {
       "records": 2000000,
-      "wall_seconds": 0.073192163,
-      "records_per_second": 27325329.9
+      "wall_seconds": 0.074170481,
+      "records_per_second": 26964905.35
     },
     "strided": {
       "records": 1999968,
-      "wall_seconds": 0.049229812,
-      "records_per_second": 40625139.91
+      "wall_seconds": 0.048515507,
+      "records_per_second": 41223273.21
     },
     "matrix_naive": {
       "records": 21307392,
-      "wall_seconds": 0.566165206,
-      "records_per_second": 37634583.99
+      "wall_seconds": 0.56635422,
+      "records_per_second": 37622023.9
     },
     "matrix_blocked": {
       "records": 21676032,
-      "wall_seconds": 0.377321183,
-      "records_per_second": 57447164.32
+      "wall_seconds": 0.377688445,
+      "records_per_second": 57391303.04
     }
   },
-  "aggregate_records_per_second": 43478782.08042107
+  "aggregate_records_per_second": 43421719.5939828
 }

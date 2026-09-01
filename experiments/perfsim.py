@@ -147,6 +147,10 @@ def flatten(result: dict, prefix: str = "") -> dict:
 def row(workload: str, result: dict, **extra) -> dict:
     """Builds one tidy result row: identity, knobs, metrics and stall shares."""
     flat = flatten(result)
+    # How fast the simulator itself ran is not a property of the simulated
+    # machine, and including it would make committed results churn on every
+    # re-run. benchmark.py is where that belongs.
+    flat = {k: v for k, v in flat.items() if not k.startswith("simulator.")}
     cycles = flat.get("cycles") or 1
     for bucket in ("l1", "l2", "dram", "bandwidth", "mshr"):
         flat[f"stall_share.{bucket}"] = flat.get(f"stall_cycles.{bucket}", 0) / cycles

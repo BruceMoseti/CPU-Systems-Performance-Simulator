@@ -651,6 +651,12 @@ matrix traces are ~200 MB each). A sidecar `.params` file records what each
 trace was generated with, so changing a workload's parameters regenerates it
 rather than silently reusing stale data.
 
+The sweep CSVs are byte-for-byte reproducible: two independent runs of
+`run_experiments.py --all` produce identical files, so re-running produces an
+empty diff unless something in the model actually changed. `validate.py`,
+`benchmark.py` and the latency curve are timing measurements and will differ
+slightly from run to run.
+
 To reproduce the profile:
 
 ```bash
