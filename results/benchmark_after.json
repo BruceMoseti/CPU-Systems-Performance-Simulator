@@ -4,51 +4,60 @@
   "engine": {
     "sequential": {
       "records": 20000000,
-      "wall_seconds": 0.45009495,
-      "records_per_second": 44435068.64
+      "wall_seconds": 0.453752001,
+      "records_per_second": 44076940.61,
+      "peak_memory_bytes": 4112384
     },
     "random": {
       "records": 20000000,
-      "wall_seconds": 0.456210771,
-      "records_per_second": 43839385.81
+      "wall_seconds": 0.460620521,
+      "records_per_second": 43419689.5,
+      "peak_memory_bytes": 4141056
     },
     "pointer_chase": {
       "records": 20000000,
-      "wall_seconds": 0.377714782,
-      "records_per_second": 52950006.07
+      "wall_seconds": 0.383528351,
+      "records_per_second": 52147383.49,
+      "peak_memory_bytes": 4190208
     }
   },
   "replay": {
     "sequential": {
       "records": 2000000,
-      "wall_seconds": 0.032127973,
-      "records_per_second": 62251048.33
+      "wall_seconds": 0.031967824,
+      "records_per_second": 62562907,
+      "peak_memory_bytes": 4968448
     },
     "random_access": {
       "records": 2000000,
-      "wall_seconds": 0.075288306,
-      "records_per_second": 26564550.41
+      "wall_seconds": 0.074327777,
+      "records_per_second": 26907840.93,
+      "peak_memory_bytes": 5058560
     },
     "pointer_chase": {
       "records": 2000000,
-      "wall_seconds": 0.074170481,
-      "records_per_second": 26964905.35
+      "wall_seconds": 0.073400944,
+      "records_per_second": 27247605.97,
+      "peak_memory_bytes": 5128192
     },
     "strided": {
       "records": 1999968,
-      "wall_seconds": 0.048515507,
-      "records_per_second": 41223273.21
+      "wall_seconds": 0.049042883,
+      "records_per_second": 40779984.33,
+      "peak_memory_bytes": 5033984
     },
     "matrix_naive": {
       "records": 21307392,
-      "wall_seconds": 0.56635422,
-      "records_per_second": 37622023.9
+      "wall_seconds": 0.565302411,
+      "records_per_second": 37692023.92,
+      "peak_memory_bytes": 5124096
     },
     "matrix_blocked": {
       "records": 21676032,
-      "wall_seconds": 0.377688445,
-      "records_per_second": 57391303.04
+      "wall_seconds": 0.377760844,
+      "records_per_second": 57380303.82,
+      "peak_memory_bytes": 5165056
     }
   },
-  "aggregate_records_per_second": 43421719.5939828
+  "aggregate_records_per_second": 43508512.7723675
 }

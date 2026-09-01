@@ -546,9 +546,11 @@ Throughput, measured by `experiments/benchmark.py` over all six traces
 | before | 26.85 | 1.90 s |
 | after cache layout change | 30.79 | |
 | after MSHR heap | 33.77 | |
-| after parser change | **43.48** | **1.17 s** |
+| after parser change | **43.51** | **1.17 s** |
 
-**+62% throughput, 38% less wall time.**
+**+62% throughput, 38% less wall time.** `benchmark.py` also reports peak
+resident memory, which is 5 MB for the baseline machine and 23 MB when
+modelling a 64 MB L2.
 
 Correctness was the constraint, and the 37 unit tests were the guard: all passed
 unchanged at every step. Additionally, the pre- and post-optimisation binaries

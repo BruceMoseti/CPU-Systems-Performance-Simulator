@@ -78,13 +78,14 @@ def main() -> int:
               f"{payload['wall_seconds']:>10.2f}")
 
     print("\nReplaying traces from disk (includes parsing)")
-    print(f"  {'workload':<18}{'M records/s':>14}{'seconds':>10}{'records':>14}")
+    print(f"  {'workload':<18}{'M records/s':>14}{'seconds':>10}{'records':>14}{'peak MB':>10}")
     replay = {}
     for workload in perfsim.WORKLOADS:
         payload = run_replay(workload, args.repeats)
         replay[workload] = payload
         print(f"  {workload:<18}{payload['records_per_second'] / 1e6:>14.2f}"
-              f"{payload['wall_seconds']:>10.2f}{int(payload['records']):>14,}")
+              f"{payload['wall_seconds']:>10.2f}{int(payload['records']):>14,}"
+              f"{payload.get('peak_memory_bytes', 0) / 1e6:>10.1f}")
 
     total_records = sum(p["records"] for p in replay.values())
     total_seconds = sum(p["wall_seconds"] for p in replay.values())

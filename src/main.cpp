@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "config.hpp"
@@ -80,6 +81,29 @@ Options parse_arguments(int argc, char** argv) {
     fail(std::string("either --trace or --benchmark is required\n\n") + kUsage);
   }
   return options;
+}
+
+// Peak resident set size in bytes. Worth reporting because the simulator's
+// footprint grows with the cache geometry being modelled, so a sweep over large
+// caches is also a sweep over the simulator's own memory use.
+//
+// Read from /proc rather than getrusage: ru_maxrss inherits the peak of the
+// process that forked us, so running under a large parent such as the Python
+// experiment driver reports that parent's footprint instead of ours. VmHWM comes
+// from this process's own address space and is unaffected.
+uint64_t peak_memory_bytes() {
+  std::ifstream status("/proc/self/status");
+  if (!status) return 0;
+  std::string label;
+  while (status >> label) {
+    if (label == "VmHWM:") {
+      uint64_t kilobytes = 0;
+      if (status >> kilobytes) return kilobytes * 1024;
+      return 0;
+    }
+    status.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
+  return 0;
 }
 
 void write_json(const std::string& path, const Json& value) {
@@ -163,10 +187,13 @@ int main(int argc, char** argv) {
         std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     const double throughput = wall > 0.0 ? static_cast<double>(records) / wall : 0.0;
 
+    const uint64_t peak_memory = peak_memory_bytes();
+
     if (!options.quiet) {
       std::cout << format_report(results);
-      std::printf("\nSimulator: %.2f M records/s (%s records in %.2f s)\n", throughput / 1e6,
-                  std::to_string(records).c_str(), wall);
+      std::printf("\nSimulator: %.2f M records/s (%s records in %.2f s, %.1f MB peak)\n",
+                  throughput / 1e6, std::to_string(records).c_str(), wall,
+                  static_cast<double>(peak_memory) / (1024.0 * 1024.0));
     }
 
     if (!options.json_path.empty()) {
@@ -175,6 +202,7 @@ int main(int argc, char** argv) {
       simulator_json.set("records", Json::number(static_cast<double>(records)));
       simulator_json.set("wall_seconds", Json::number(wall));
       simulator_json.set("records_per_second", Json::number(throughput));
+      simulator_json.set("peak_memory_bytes", Json::number(static_cast<double>(peak_memory)));
       root.set("simulator", std::move(simulator_json));
       write_json(options.json_path, root);
     }
