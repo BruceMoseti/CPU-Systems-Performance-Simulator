@@ -21,10 +21,10 @@ void Cpu::stall(uint64_t cycles, StallBucket bucket) {
 
 void Cpu::stall_split(uint64_t cycles, StallBucket bucket, double queue_fraction) {
   if (cycles == 0) return;
-  const uint64_t queued =
-      static_cast<uint64_t>(static_cast<double>(cycles) * queue_fraction + 0.5);
-  stall(cycles - std::min(queued, cycles), bucket);
-  stall(std::min(queued, cycles), StallBucket::Bandwidth);
+  const uint64_t queued = std::min(
+      cycles, static_cast<uint64_t>(static_cast<double>(cycles) * queue_fraction + 0.5));
+  stall(cycles - queued, bucket);
+  stall(queued, StallBucket::Bandwidth);
 }
 
 void Cpu::sift_down(size_t root) {

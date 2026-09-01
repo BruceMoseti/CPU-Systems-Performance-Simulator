@@ -10,8 +10,7 @@ Memory::Memory(const MemoryConfig& config, uint32_t transfer_bytes, double frequ
       transfer_bytes_(transfer_bytes),
       // GB/s divided by GHz gives bytes per cycle.
       bytes_per_cycle_(config.bandwidth_gbps / frequency_ghz),
-      transfer_cycles_(static_cast<double>(transfer_bytes) /
-                       (config.bandwidth_gbps / frequency_ghz)) {}
+      transfer_cycles_(static_cast<double>(transfer_bytes) / bytes_per_cycle_) {}
 
 uint64_t Memory::occupy_bus(uint64_t request_cycle) {
   const double arrival = static_cast<double>(request_cycle);

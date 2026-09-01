@@ -67,8 +67,8 @@ ctest --test-dir build            # 37 unit tests
   | ./build/perfsim --config configs/baseline.json --trace -
 
 # Machine-readable output for the Python layer
-./build/perfsim --config configs/baseline.json --trace traces/x.trace \
-  --quiet --json results/x.json
+./build/perfsim --config configs/baseline.json --trace traces/pointer_chase.trace \
+  --quiet --json results/pointer_chase.json
 ```
 
 Python side (needs `pandas` and `matplotlib`):
@@ -248,7 +248,7 @@ exists.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `sequential` | 2.61 | 0.38 | 87.5% | 0.0% | 28.0 cy | 16.00 | memory-level parallelism |
 | `random_access` | 0.87 | 1.15 | 0.4% | 6.1% | 184.6 cy | 15.99 | memory-level parallelism |
-| `pointer_chase` | 0.02 | 62.10 | 0.4% | 5.4% | 185.5 cy | 1.00 | DRAM latency |
+| `pointer_chase` | 0.016 | 62.10 | 0.4% | 5.4% | 185.5 cy | 1.00 | DRAM latency |
 | `strided` | 4.00 | 0.25 | 33.2% | 100.0% | 12.0 cy | 6.11 | compute |
 | `matrix_naive` | 3.96 | 0.25 | 49.1% | 99.8% | 10.3 cy | 13.20 | compute |
 | `matrix_blocked` | 3.98 | 0.25 | 99.4% | 80.6% | 4.3 cy | 0.48 | compute |
@@ -291,7 +291,7 @@ IPC against MSHR count, 1 → 64:
 | `sequential` | 0.16 | 0.33 | 0.65 | 1.31 | 2.61 | 4.00 | 4.00 |
 | `random_access` | 0.05 | 0.11 | 0.22 | 0.43 | 0.87 | 1.72 | 2.39 |
 | `matrix_naive` | 0.30 | 0.60 | 1.20 | 2.40 | 3.96 | 3.99 | 3.99 |
-| `pointer_chase` | 0.02 | 0.02 | 0.02 | 0.02 | 0.02 | 0.02 | 0.02 |
+| `pointer_chase` | 0.016 | 0.016 | 0.016 | 0.016 | 0.016 | 0.016 | 0.016 |
 
 Everything with independent misses scales almost linearly until it hits another
 limit. `pointer_chase` is flat to five decimal places across a 64× increase in
@@ -399,7 +399,7 @@ IPC against DRAM latency, 60 → 300 cycles:
 
 | workload | 60 cy | 120 cy | 180 cy | 300 cy | slowdown |
 | --- | --- | --- | --- | --- | --- |
-| `pointer_chase` | 0.04 | 0.02 | 0.02 | 0.01 | 4.1× |
+| `pointer_chase` | 0.041 | 0.023 | 0.016 | 0.010 | 4.1× |
 | `random_access` | 2.14 | 1.24 | 0.87 | 0.54 | 4.0× |
 | `sequential` | 4.00 | 3.76 | 2.61 | 1.62 | 2.5× |
 | `matrix_naive` | 3.99 | 3.97 | 3.96 | 3.93 | 1.02× |
