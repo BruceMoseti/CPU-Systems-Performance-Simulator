@@ -23,6 +23,7 @@ constexpr char kUsage[] =
     "  --mode <m>        trace (default) writes a trace; native runs the real kernel\n"
     "  --n <n>           elements, or matrix dimension for the matrix kernel\n"
     "  --block <b>       matrix blocking factor; omit or 0 for the unblocked version\n"
+    "  --stride <s>      byte spacing between elements for the strided kernel\n"
     "  --iterations <i>  repeat the kernel (default 1)\n"
     "  --seed <s>        random seed (default 12345)\n"
     "  --out <path>      trace destination; \"-\" writes to stdout (default)\n"
@@ -74,6 +75,8 @@ int main(int argc, char** argv) {
         n_given = true;
       } else if (arg == "--block") {
         params.block = parse_u64(require_value(argc, argv, i));
+      } else if (arg == "--stride") {
+        params.stride = parse_u64(require_value(argc, argv, i));
       } else if (arg == "--iterations") {
         params.iterations = parse_u64(require_value(argc, argv, i));
       } else if (arg == "--seed") {
@@ -94,12 +97,16 @@ int main(int argc, char** argv) {
     if (workload == nullptr) fail("unknown workload " + name + " (try --list)");
     if (params.n == 0) fail("--n must be greater than zero");
     if (params.iterations == 0) fail("--iterations must be greater than zero");
+    if (params.stride == 0 || params.stride % kElementSize != 0) {
+      fail("--stride must be a non-zero multiple of " + std::to_string(kElementSize));
+    }
     if (!n_given && std::string(workload->name) == "matrix") params.n = 128;
 
     if (mode == "trace") {
       const std::string header = "workload: " + std::string(workload->name) +
                                  " n=" + std::to_string(params.n) +
                                  " block=" + std::to_string(params.block) +
+                                 " stride=" + std::to_string(params.stride) +
                                  " iterations=" + std::to_string(params.iterations) +
                                  " seed=" + std::to_string(params.seed);
       TraceWriter writer(out_path, header);
@@ -120,10 +127,11 @@ int main(int argc, char** argv) {
     result.set("mode", Json::string("native"));
     result.set("n", Json::number(static_cast<double>(params.n)));
     result.set("block", Json::number(static_cast<double>(params.block)));
+    result.set("stride", Json::number(static_cast<double>(params.stride)));
     result.set("iterations", Json::number(static_cast<double>(params.iterations)));
     result.set("seed", Json::number(static_cast<double>(params.seed)));
     result.set("seconds", Json::number(seconds));
-    result.set("checksum", Json::number(static_cast<double>(checksum)));
+    result.set("checksum", Json::string(std::to_string(checksum)));
     std::cout << result.dump();
     return 0;
   } catch (const std::exception& e) {
@@ -142,6 +150,8 @@ const std::vector<Workload>& registry() {
        emit_random_access, native_random_access},
       {"pointer_chase", "dependent loads following a random cycle (latency exposed)",
        emit_pointer_chase, native_pointer_chase},
+      {"strided", "random loads into a strided array of structs (conflict misses)", emit_strided,
+       native_strided},
       {"matrix", "matrix multiply; --block turns the naive nest into a tiled one", emit_matrix,
        native_matrix},
   };

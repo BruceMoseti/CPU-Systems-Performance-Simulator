@@ -35,6 +35,7 @@ add_executable(tracegen
   workloads/pointer_chase.cpp
   workloads/random_access.cpp
   workloads/sequential.cpp
+  workloads/strided.cpp
 )
 target_link_libraries(tracegen PRIVATE perfsim_core)
 target_include_directories(tracegen PRIVATE workloads)

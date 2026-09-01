@@ -20,6 +20,7 @@ namespace perfsim::workloads {
 struct Params {
   uint64_t n = 1 << 20;      // elements, or matrix dimension for matrix kernels
   uint64_t block = 0;        // matrix blocking factor; 0 or >= n means unblocked
+  uint64_t stride = 4096;    // byte spacing between elements for the strided kernel
   uint64_t iterations = 1;   // repeat the kernel to reach a steady state
   uint64_t seed = 12345;
 };
@@ -61,6 +62,8 @@ void emit_random_access(TraceWriter& out, const Params& params);
 uint64_t native_random_access(const Params& params);
 void emit_pointer_chase(TraceWriter& out, const Params& params);
 uint64_t native_pointer_chase(const Params& params);
+void emit_strided(TraceWriter& out, const Params& params);
+uint64_t native_strided(const Params& params);
 void emit_matrix(TraceWriter& out, const Params& params);
 uint64_t native_matrix(const Params& params);
 
