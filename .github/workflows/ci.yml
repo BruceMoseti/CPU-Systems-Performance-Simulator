@@ -1,0 +1,110 @@
+name: build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: release
+            cxx: g++
+            build_type: Release
+            flags: ""
+          - name: sanitizers
+            cxx: g++
+            build_type: Debug
+            # Cache logic and raw-pointer trace parsing are the two places this
+            # project is most likely to be subtly wrong, so the tests also run
+            # under the address and undefined-behaviour sanitizers.
+            flags: "-fsanitize=address,undefined,float-cast-overflow -fno-sanitize-recover=all -O1"
+          - name: clang
+            cxx: clang++
+            build_type: Release
+            flags: ""
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_CXX_FLAGS="${{ matrix.flags }}"
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: End to end
+        run: |
+          set -euo pipefail
+          mkdir -p traces
+          ./build/tracegen pointer_chase --n 20000 --out traces/chase.trace
+          ./build/tracegen matrix --n 32 --block 8 --out traces/matrix.trace
+          for config in configs/*.json; do
+            for trace in traces/*.trace; do
+              ./build/perfsim --config "$config" --trace "$trace" --quiet --json /dev/null
+            done
+          done
+          # The generator can also be piped straight in, without a file.
+          ./build/tracegen sequential --n 20000 --out - \
+            | ./build/perfsim --config configs/baseline.json --trace - --quiet --json /dev/null
+          # Malformed input must be rejected, not crash.
+          printf 'R 0x\n' > traces/bad.trace
+          if ./build/perfsim --config configs/baseline.json --trace traces/bad.trace --quiet; then
+            echo "expected a malformed trace to be rejected" >&2
+            exit 1
+          fi
+
+      - name: Naive and blocked matrix multiply must agree
+        run: |
+          set -euo pipefail
+          naive=$(./build/tracegen matrix --n 48 --mode native | python3 -c 'import json,sys; print(json.load(sys.stdin)["checksum"])')
+          blocked=$(./build/tracegen matrix --n 48 --block 16 --mode native | python3 -c 'import json,sys; print(json.load(sys.stdin)["checksum"])')
+          echo "naive=$naive blocked=$blocked"
+          test "$naive" = "$blocked"
+
+  experiments:
+    runs-on: ubuntu-latest
+    name: experiment pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: python3 -m pip install --quiet pandas matplotlib
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
+          cmake --build build -j
+
+      - name: Sweeps, figures and analysis
+        working-directory: experiments
+        run: |
+          set -euo pipefail
+          python3 run_experiments.py --sweep blocking --sweep mlp
+          python3 plot.py --figure blocking --figure mlp --figure stall_breakdown
+          python3 analyze.py --workload pointer_chase
+          python3 benchmark.py --accesses 200000 --repeats 1 --label ci
+
+      - name: Sweep results must be reproducible
+        working-directory: experiments
+        run: |
+          set -euo pipefail
+          cp ../results/mlp.csv /tmp/first.csv
+          python3 run_experiments.py --sweep mlp
+          diff /tmp/first.csv ../results/mlp.csv
