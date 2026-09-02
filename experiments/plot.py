@@ -305,7 +305,9 @@ def figure_stall_breakdown() -> None:
         bottom = [b + s for b, s in zip(bottom, shares[bucket])]
 
     for index, ipc in enumerate(ipcs):
-        axis.text(index, 101, f"IPC {ipc:.2f}", ha="center", fontsize=9)
+        # Two decimals round a latency-bound workload to 0.02 and hide the point.
+        label = f"IPC {ipc:.3f}" if ipc < 0.1 else f"IPC {ipc:.2f}"
+        axis.text(index, 101, label, ha="center", fontsize=9)
 
     axis.set_ylabel("Share of all cycles (%)")
     axis.set_ylim(0, 112)
