@@ -1,0 +1,54 @@
+{
+  "label": "before",
+  "accesses": 10000000,
+  "engine": {
+    "sequential": {
+      "records": 20000000,
+      "wall_seconds": 0.731492205,
+      "records_per_second": 27341371.33
+    },
+    "random": {
+      "records": 20000000,
+      "wall_seconds": 1.036516864,
+      "records_per_second": 19295392.77
+    },
+    "pointer_chase": {
+      "records": 20000000,
+      "wall_seconds": 0.82609233,
+      "records_per_second": 24210368.83
+    }
+  },
+  "replay": {
+    "sequential": {
+      "records": 2000000,
+      "wall_seconds": 0.046212818,
+      "records_per_second": 43278035.98
+    },
+    "random_access": {
+      "records": 2000000,
+      "wall_seconds": 0.13269675,
+      "records_per_second": 15071959.19
+    },
+    "pointer_chase": {
+      "records": 2000000,
+      "wall_seconds": 0.125859941,
+      "records_per_second": 15890679.62
+    },
+    "strided": {
+      "records": 1999968,
+      "wall_seconds": 0.07758804,
+      "records_per_second": 25776756.31
+    },
+    "matrix_naive": {
+      "records": 21307392,
+      "wall_seconds": 0.992627727,
+      "records_per_second": 21465642.58
+    },
+    "matrix_blocked": {
+      "records": 21676032,
+      "wall_seconds": 0.524160867,
+      "records_per_second": 41353777.75
+    }
+  },
+  "aggregate_records_per_second": 26845428.503708363
+}

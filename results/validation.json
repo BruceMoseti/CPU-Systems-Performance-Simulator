@@ -1,0 +1,223 @@
+{
+  "host": {
+    "model_name": "Intel(R) Xeon(R) Processor",
+    "frequency_ghz": 2.4,
+    "caches": [
+      {
+        "level": 1,
+        "type": "Data",
+        "size_kb": 48,
+        "ways": 12,
+        "line_size": 64
+      },
+      {
+        "level": 1,
+        "type": "Instruction",
+        "size_kb": 32,
+        "ways": 8,
+        "line_size": 64
+      },
+      {
+        "level": 2,
+        "type": "Unified",
+        "size_kb": 2048,
+        "ways": 16,
+        "line_size": 64
+      },
+      {
+        "level": 3,
+        "type": "Unified",
+        "size_kb": 327680,
+        "ways": 20,
+        "line_size": 64
+      }
+    ],
+    "hardware_counters": {
+      "available": false,
+      "reason": "perf_event_open: No such file or directory"
+    }
+  },
+  "latency_curve": [
+    {
+      "working_set_kb": 4,
+      "hops": 8000000,
+      "ns_per_hop": 1.2522675,
+      "cycles_per_hop": 3.005442
+    },
+    {
+      "working_set_kb": 16,
+      "hops": 7999488,
+      "ns_per_hop": 1.2529544390841014,
+      "cycles_per_hop": 3.007090653801843
+    },
+    {
+      "working_set_kb": 32,
+      "hops": 7999488,
+      "ns_per_hop": 1.2527316748271888,
+      "cycles_per_hop": 3.006556019585253
+    },
+    {
+      "working_set_kb": 64,
+      "hops": 7995392,
+      "ns_per_hop": 2.060750992571721,
+      "cycles_per_hop": 4.94580238217213
+    },
+    {
+      "working_set_kb": 128,
+      "hops": 7995392,
+      "ns_per_hop": 3.083516480492764,
+      "cycles_per_hop": 7.4004395531826335
+    },
+    {
+      "working_set_kb": 256,
+      "hops": 7995392,
+      "ns_per_hop": 3.5485902379770753,
+      "cycles_per_hop": 8.516616571144981
+    },
+    {
+      "working_set_kb": 512,
+      "hops": 7995392,
+      "ns_per_hop": 4.217276151063013,
+      "cycles_per_hop": 10.12146276255123
+    },
+    {
+      "working_set_kb": 1024,
+      "hops": 7995392,
+      "ns_per_hop": 4.993548408883517,
+      "cycles_per_hop": 11.98451618132044
+    },
+    {
+      "working_set_kb": 2048,
+      "hops": 7864320,
+      "ns_per_hop": 8.447126134236653,
+      "cycles_per_hop": 20.273102722167966
+    },
+    {
+      "working_set_kb": 4096,
+      "hops": 7864320,
+      "ns_per_hop": 19.4459597269694,
+      "cycles_per_hop": 46.670303344726555
+    },
+    {
+      "working_set_kb": 8192,
+      "hops": 7340032,
+      "ns_per_hop": 26.79530361720494,
+      "cycles_per_hop": 64.30872868129185
+    },
+    {
+      "working_set_kb": 16384,
+      "hops": 6291456,
+      "ns_per_hop": 35.70928843816122,
+      "cycles_per_hop": 85.70229225158691
+    },
+    {
+      "working_set_kb": 32768,
+      "hops": 4194304,
+      "ns_per_hop": 39.93294167518616,
+      "cycles_per_hop": 95.83906002044678
+    },
+    {
+      "working_set_kb": 65536,
+      "hops": 8388608,
+      "ns_per_hop": 42.711134910583496,
+      "cycles_per_hop": 102.50672378540038
+    }
+  ],
+  "host_config": {
+    "cpu": {
+      "frequency_ghz": 2.4,
+      "issue_width": 4,
+      "base_cpi": 0.0,
+      "mshrs": 16
+    },
+    "l1": {
+      "size_kb": 48,
+      "line_size": 64,
+      "associativity": 12,
+      "latency_cycles": 3
+    },
+    "l2": {
+      "size_kb": 2048,
+      "line_size": 64,
+      "associativity": 16,
+      "latency_cycles": 12
+    },
+    "memory": {
+      "latency_cycles": 64,
+      "bandwidth_gbps": 50
+    }
+  },
+  "workloads": [
+    {
+      "workload": "sequential",
+      "native_ms": 0.305043,
+      "model_ms": 0.41669625,
+      "ratio": 1.3660246260363293,
+      "model_ipc": 3.99971602,
+      "model_l1_hit_rate": 0.875,
+      "bottleneck": "Compute"
+    },
+    {
+      "workload": "random_access",
+      "native_ms": 2.727876,
+      "model_ms": 1.655930417,
+      "ratio": 0.6070402089391159,
+      "model_ipc": 2.516208788,
+      "model_l1_hit_rate": 0.006114,
+      "bottleneck": "Memory-level parallelism"
+    },
+    {
+      "workload": "pointer_chase",
+      "native_ms": 26.116747999999998,
+      "model_ms": 27.07227333,
+      "ratio": 1.0365866887408801,
+      "model_ipc": 0.04617270166,
+      "model_l1_hit_rate": 0.005464,
+      "bottleneck": "DRAM latency"
+    },
+    {
+      "workload": "strided",
+      "native_ms": 2.519409,
+      "model_ms": 0.7291745833,
+      "ratio": 0.2894228699270345,
+      "model_ipc": 3.999892573,
+      "model_l1_hit_rate": 0.4993449895,
+      "bottleneck": "Compute"
+    },
+    {
+      "workload": "matrix_naive",
+      "native_ms": 5.721515,
+      "model_ms": 3.7064091670000003,
+      "ratio": 0.6478020536518737,
+      "model_ipc": 3.98669422,
+      "model_l1_hit_rate": 0.491575251,
+      "bottleneck": "Compute"
+    },
+    {
+      "workload": "matrix_blocked",
+      "native_ms": 2.0913899999999996,
+      "model_ms": 3.738169167,
+      "ratio": 1.7874089323368672,
+      "model_ipc": 3.99391235,
+      "model_l1_hit_rate": 0.9945541022,
+      "bottleneck": "Compute"
+    }
+  ],
+  "comparisons": [
+    {
+      "comparison": "naive / blocked matrix multiply",
+      "native": 2.735747517201479,
+      "model": 0.9915038622969842
+    },
+    {
+      "comparison": "pointer chase / random access",
+      "native": 9.574023159410471,
+      "model": 16.3486780918283
+    },
+    {
+      "comparison": "random access / sequential",
+      "native": 8.94259497841288,
+      "model": 3.9739508502896297
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "label": "after",
+  "accesses": 10000000,
+  "engine": {
+    "sequential": {
+      "records": 20000000,
+      "wall_seconds": 0.436834793,
+      "records_per_second": 45783898.9,
+      "peak_memory_bytes": 4096000
+    },
+    "random": {
+      "records": 20000000,
+      "wall_seconds": 0.445690013,
+      "records_per_second": 44874238.63,
+      "peak_memory_bytes": 4227072
+    },
+    "pointer_chase": {
+      "records": 20000000,
+      "wall_seconds": 0.378803306,
+      "records_per_second": 52797849.66,
+      "peak_memory_bytes": 4104192
+    }
+  },
+  "replay": {
+    "sequential": {
+      "records": 2000000,
+      "wall_seconds": 0.030384762,
+      "records_per_second": 65822467.2,
+      "peak_memory_bytes": 5021696
+    },
+    "random_access": {
+      "records": 2000000,
+      "wall_seconds": 0.072822274,
+      "records_per_second": 27464124.51,
+      "peak_memory_bytes": 5087232
+    },
+    "pointer_chase": {
+      "records": 2000000,
+      "wall_seconds": 0.072306242,
+      "records_per_second": 27660129.26,
+      "peak_memory_bytes": 5066752
+    },
+    "strided": {
+      "records": 1999968,
+      "wall_seconds": 0.047415152,
+      "records_per_second": 42179934.38,
+      "peak_memory_bytes": 5017600
+    },
+    "matrix_naive": {
+      "records": 21307392,
+      "wall_seconds": 0.555634812,
+      "records_per_second": 38347834.84,
+      "peak_memory_bytes": 5120000
+    },
+    "matrix_blocked": {
+      "records": 21676032,
+      "wall_seconds": 0.363667755,
+      "records_per_second": 59603942.62,
+      "peak_memory_bytes": 4960256
+    }
+  },
+  "aggregate_records_per_second": 44634922.475317836
+}
