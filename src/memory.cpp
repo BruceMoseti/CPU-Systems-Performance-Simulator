@@ -39,8 +39,7 @@ void Memory::write(uint64_t request_cycle) {
 
 MemoryHierarchy::MemoryHierarchy(const Config& config)
     : l1_(config.l1),
-      memory_(config.memory,
-              config.l2.enabled ? config.l2.line_size : config.l1.line_size,
+      memory_(config.memory, config.l2.enabled ? config.l2.line_size : config.l1.line_size,
               config.cpu.frequency_ghz),
       l1_latency_(config.l1.latency_cycles),
       l2_latency_(config.l2.enabled ? config.l2.latency_cycles : 0) {

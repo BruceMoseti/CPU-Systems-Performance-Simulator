@@ -21,8 +21,8 @@ void Cpu::stall(uint64_t cycles, StallBucket bucket) {
 
 void Cpu::stall_split(uint64_t cycles, StallBucket bucket, double queue_fraction) {
   if (cycles == 0) return;
-  const uint64_t queued = std::min(
-      cycles, static_cast<uint64_t>(static_cast<double>(cycles) * queue_fraction + 0.5));
+  const uint64_t queued =
+      std::min(cycles, static_cast<uint64_t>(static_cast<double>(cycles) * queue_fraction + 0.5));
   stall(cycles - queued, bucket);
   stall(queued, StallBucket::Bandwidth);
 }
@@ -70,10 +70,9 @@ void Cpu::access(uint64_t address, bool is_write, bool dependent) {
   stats_.miss_latency_cycles += outcome.latency;
   const StallBucket bucket =
       outcome.source == AccessSource::L2 ? StallBucket::L2 : StallBucket::Dram;
-  const double queue_fraction =
-      outcome.latency == 0 ? 0.0
-                           : static_cast<double>(outcome.queue_delay) /
-                                 static_cast<double>(outcome.latency);
+  const double queue_fraction = outcome.latency == 0 ? 0.0
+                                                     : static_cast<double>(outcome.queue_delay) /
+                                                           static_cast<double>(outcome.latency);
 
   // The miss holds an MSHR until its fill completes. Reusing the entry that
   // frees up soonest models a fully associative MSHR file.
@@ -89,15 +88,9 @@ void Cpu::access(uint64_t address, bool is_write, bool dependent) {
 
 void Cpu::execute(const TraceRecord& record) {
   switch (record.type) {
-    case RecordType::Compute:
-      issue(record.value);
-      break;
-    case RecordType::Read:
-      access(record.value, /*is_write=*/false, /*dependent=*/false);
-      break;
-    case RecordType::Write:
-      access(record.value, /*is_write=*/true, /*dependent=*/false);
-      break;
+    case RecordType::Compute: issue(record.value); break;
+    case RecordType::Read: access(record.value, /*is_write=*/false, /*dependent=*/false); break;
+    case RecordType::Write: access(record.value, /*is_write=*/true, /*dependent=*/false); break;
     case RecordType::DependentRead:
       access(record.value, /*is_write=*/false, /*dependent=*/true);
       break;

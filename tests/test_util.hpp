@@ -43,56 +43,53 @@ inline int run_all() {
 
 }  // namespace testing
 
-#define TEST(test_name)                                                   \
-  static void test_name();                                                \
-  [[maybe_unused]] static const bool test_name##_registered =             \
-      (::testing::tests().push_back({#test_name, test_name}), true);      \
+#define TEST(test_name)                                              \
+  static void test_name();                                           \
+  [[maybe_unused]] static const bool test_name##_registered =        \
+      (::testing::tests().push_back({#test_name, test_name}), true); \
   static void test_name()
 
-#define CHECK(condition)                                                        \
-  do {                                                                          \
-    if (!(condition)) {                                                          \
-      ++::testing::failure_count();                                              \
-      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #condition      \
-                << " is false\n";                                                \
-    }                                                                            \
+#define CHECK(condition)                                                                       \
+  do {                                                                                         \
+    if (!(condition)) {                                                                        \
+      ++::testing::failure_count();                                                            \
+      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #condition << " is false\n"; \
+    }                                                                                          \
   } while (false)
 
-#define CHECK_EQ(actual, expected)                                                     \
-  do {                                                                                  \
-    const auto check_actual = (actual);                                                  \
-    const auto check_expected = (expected);                                              \
-    if (!(check_actual == check_expected)) {                                             \
-      ++::testing::failure_count();                                                      \
-      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #actual << " == "       \
-                << #expected << " (got " << check_actual << ", want " << check_expected   \
-                << ")\n";                                                                \
-    }                                                                                    \
+#define CHECK_EQ(actual, expected)                                                               \
+  do {                                                                                           \
+    const auto check_actual = (actual);                                                          \
+    const auto check_expected = (expected);                                                      \
+    if (!(check_actual == check_expected)) {                                                     \
+      ++::testing::failure_count();                                                              \
+      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #actual << " == " << #expected \
+                << " (got " << check_actual << ", want " << check_expected << ")\n";             \
+    }                                                                                            \
   } while (false)
 
-#define CHECK_NEAR(actual, expected, tolerance)                                        \
-  do {                                                                                  \
-    const double check_actual = static_cast<double>(actual);                             \
-    const double check_expected = static_cast<double>(expected);                          \
-    if (std::fabs(check_actual - check_expected) > (tolerance)) {                          \
-      ++::testing::failure_count();                                                       \
-      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #actual << " ~= "        \
-                << #expected << " (got " << check_actual << ", want " << check_expected     \
-                << ")\n";                                                                  \
-    }                                                                                      \
+#define CHECK_NEAR(actual, expected, tolerance)                                                  \
+  do {                                                                                           \
+    const double check_actual = static_cast<double>(actual);                                     \
+    const double check_expected = static_cast<double>(expected);                                 \
+    if (std::fabs(check_actual - check_expected) > (tolerance)) {                                \
+      ++::testing::failure_count();                                                              \
+      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #actual << " ~= " << #expected \
+                << " (got " << check_actual << ", want " << check_expected << ")\n";             \
+    }                                                                                            \
   } while (false)
 
-#define CHECK_THROWS(statement)                                                  \
-  do {                                                                            \
-    bool threw = false;                                                            \
-    try {                                                                          \
-      statement;                                                                   \
-    } catch (const std::exception&) {                                              \
-      threw = true;                                                                \
-    }                                                                              \
-    if (!threw) {                                                                  \
-      ++::testing::failure_count();                                                 \
-      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #statement         \
-                << " did not throw\n";                                              \
-    }                                                                               \
+#define CHECK_THROWS(statement)                                              \
+  do {                                                                       \
+    bool threw = false;                                                      \
+    try {                                                                    \
+      statement;                                                             \
+    } catch (const std::exception&) {                                        \
+      threw = true;                                                          \
+    }                                                                        \
+    if (!threw) {                                                            \
+      ++::testing::failure_count();                                          \
+      std::cerr << "  " << __FILE__ << ":" << __LINE__ << ": " << #statement \
+                << " did not throw\n";                                       \
+    }                                                                        \
   } while (false)

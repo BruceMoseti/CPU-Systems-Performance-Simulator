@@ -56,12 +56,9 @@ class Parser {
 
   Json parse_value() {
     switch (peek()) {
-      case '{':
-        return parse_object();
-      case '[':
-        return parse_array();
-      case '"':
-        return Json::string(parse_string());
+      case '{': return parse_object();
+      case '[': return parse_array();
+      case '"': return Json::string(parse_string());
       case 't':
         if (!consume_literal("true")) fail("invalid literal");
         return Json::boolean(true);
@@ -71,8 +68,7 @@ class Parser {
       case 'n':
         if (!consume_literal("null")) fail("invalid literal");
         return Json();
-      default:
-        return parse_number();
+      default: return parse_number();
     }
   }
 
@@ -293,18 +289,10 @@ void Json::dump_to(std::string& out, int indent, int depth) const {
   const std::string closing_pad = pretty ? std::string(depth * indent, ' ') : std::string();
 
   switch (type_) {
-    case Type::Null:
-      out += "null";
-      break;
-    case Type::Bool:
-      out += bool_ ? "true" : "false";
-      break;
-    case Type::Number:
-      append_number(out, number_);
-      break;
-    case Type::String:
-      append_escaped(out, string_);
-      break;
+    case Type::Null: out += "null"; break;
+    case Type::Bool: out += bool_ ? "true" : "false"; break;
+    case Type::Number: append_number(out, number_); break;
+    case Type::String: append_escaped(out, string_); break;
     case Type::Array:
       if (elements_.empty()) {
         out += "[]";

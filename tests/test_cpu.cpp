@@ -176,8 +176,8 @@ TEST(stall_buckets_partition_every_cycle) {
   const Results results = simulator.finish();
 
   CHECK_EQ(results.cpu.compute_cycles + results.cpu.stalls.total(), results.cpu.cycles);
-  CHECK_NEAR(results.stall_fraction,
-             static_cast<double>(results.cpu.stalls.total()) /
-                 static_cast<double>(results.cpu.cycles),
-             1e-12);
+  CHECK_NEAR(
+      results.stall_fraction,
+      static_cast<double>(results.cpu.stalls.total()) / static_cast<double>(results.cpu.cycles),
+      1e-12);
 }

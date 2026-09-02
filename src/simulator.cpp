@@ -48,8 +48,7 @@ Results Simulator::finish() {
   const uint64_t dram_bytes = results.memory.bytes_read + results.memory.bytes_written;
   results.achieved_bandwidth_gbps =
       results.seconds > 0.0 ? static_cast<double>(dram_bytes) / results.seconds / 1e9 : 0.0;
-  results.bandwidth_utilization =
-      results.achieved_bandwidth_gbps / config_.memory.bandwidth_gbps;
+  results.bandwidth_utilization = results.achieved_bandwidth_gbps / config_.memory.bandwidth_gbps;
 
   results.bottleneck = classify_bottleneck(results);
   return results;
@@ -95,8 +94,9 @@ Bottleneck classify_bottleneck(const Results& results) {
       {dram_total, "dram"},
       {stalls.mshr, "mshr"},
   }};
-  const auto worst = std::max_element(candidates.begin(), candidates.end(),
-                                      [](const auto& a, const auto& b) { return a.first < b.first; });
+  const auto worst =
+      std::max_element(candidates.begin(), candidates.end(),
+                       [](const auto& a, const auto& b) { return a.first < b.first; });
   const double share = ratio(worst->first, results.cpu.cycles);
   const std::string share_text = std::to_string(static_cast<int>(share * 100.0)) + "% of cycles";
 

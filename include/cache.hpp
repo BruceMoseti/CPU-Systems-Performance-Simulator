@@ -12,8 +12,8 @@ struct CacheStats {
   uint64_t accesses = 0;
   uint64_t hits = 0;
   uint64_t misses = 0;
-  uint64_t writebacks = 0;        // dirty lines sent to the next level
-  uint64_t writebacks_in = 0;     // dirty lines received from the level above
+  uint64_t writebacks = 0;     // dirty lines sent to the next level
+  uint64_t writebacks_in = 0;  // dirty lines received from the level above
 
   double hit_rate() const {
     return accesses == 0 ? 0.0 : static_cast<double>(hits) / static_cast<double>(accesses);

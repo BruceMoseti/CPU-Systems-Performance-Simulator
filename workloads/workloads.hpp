@@ -19,10 +19,10 @@
 namespace perfsim::workloads {
 
 struct Params {
-  uint64_t n = 1 << 20;      // elements, or matrix dimension for matrix kernels
-  uint64_t block = 0;        // matrix blocking factor; 0 or >= n means unblocked
-  uint64_t stride = 4096;    // byte spacing between elements for the strided kernel
-  uint64_t iterations = 1;   // repeat the kernel to reach a steady state
+  uint64_t n = 1 << 20;     // elements, or matrix dimension for matrix kernels
+  uint64_t block = 0;       // matrix blocking factor; 0 or >= n means unblocked
+  uint64_t stride = 4096;   // byte spacing between elements for the strided kernel
+  uint64_t iterations = 1;  // repeat the kernel to reach a steady state
   uint64_t seed = 12345;
 };
 

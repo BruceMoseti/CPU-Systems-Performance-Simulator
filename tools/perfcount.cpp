@@ -178,8 +178,8 @@ int main(int argc, char** argv) {
     close(counter.fd);
   }
 
-  const bool hardware_available = values.find("cycles") != nullptr &&
-                                  values.find("instructions") != nullptr;
+  const bool hardware_available =
+      values.find("cycles") != nullptr && values.find("instructions") != nullptr;
 
   Json root = Json::object();
   root.set("command", Json::string(command_line));

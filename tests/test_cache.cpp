@@ -40,8 +40,8 @@ TEST(direct_mapped_conflict_miss) {
 
   CHECK(!cache.access(0x000, false).hit);
   CHECK(cache.access(0x000, false).hit);
-  CHECK(!cache.access(0x400, false).hit);   // line 16 -> set 0, evicts line 0
-  CHECK(!cache.access(0x000, false).hit);   // conflict miss
+  CHECK(!cache.access(0x400, false).hit);  // line 16 -> set 0, evicts line 0
+  CHECK(!cache.access(0x000, false).hit);  // conflict miss
   CHECK_EQ(cache.stats().hits, 1u);
   CHECK_EQ(cache.stats().misses, 3u);
 }

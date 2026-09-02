@@ -38,9 +38,7 @@ std::string require_value(int argc, char** argv, int& i) {
   return argv[++i];
 }
 
-uint64_t parse_u64(const std::string& text) {
-  return std::strtoull(text.c_str(), nullptr, 10);
-}
+uint64_t parse_u64(const std::string& text) { return std::strtoull(text.c_str(), nullptr, 10); }
 
 void print_list() {
   for (const Workload& workload : registry()) {
@@ -102,12 +100,11 @@ int main(int argc, char** argv) {
     if (!n_given && std::string(workload->name) == "matrix") params.n = 128;
 
     if (mode == "trace") {
-      const std::string header = "workload: " + std::string(workload->name) +
-                                 " n=" + std::to_string(params.n) +
-                                 " block=" + std::to_string(params.block) +
-                                 " stride=" + std::to_string(params.stride) +
-                                 " iterations=" + std::to_string(params.iterations) +
-                                 " seed=" + std::to_string(params.seed);
+      const std::string header =
+          "workload: " + std::string(workload->name) + " n=" + std::to_string(params.n) +
+          " block=" + std::to_string(params.block) + " stride=" + std::to_string(params.stride) +
+          " iterations=" + std::to_string(params.iterations) +
+          " seed=" + std::to_string(params.seed);
       TraceWriter writer(out_path, header);
       workload->emit(writer, params);
       writer.close();

@@ -51,7 +51,8 @@ std::string bar(double fraction, int width = 34) {
 }
 
 void stall_row(std::ostringstream& out, const char* label, uint64_t cycles, uint64_t total) {
-  const double fraction = total == 0 ? 0.0 : static_cast<double>(cycles) / static_cast<double>(total);
+  const double fraction =
+      total == 0 ? 0.0 : static_cast<double>(cycles) / static_cast<double>(total);
   out << sprintf_str("  %-26s %5.1f%%  %-12s %s\n", label, fraction * 100.0,
                      with_commas(cycles).c_str(), bar(fraction).c_str());
 }
@@ -94,18 +95,20 @@ std::string format_report(const Results& results) {
   out << sprintf_str("  %-26s %14s\n", "Execution time:", format_time(results.seconds).c_str());
 
   out << "\nMemory hierarchy\n----------------\n";
-  out << sprintf_str("  %-26s %14s   hit rate %5.1f%%\n", "L1 accesses:",
-                     with_commas(results.l1.accesses).c_str(), results.l1.hit_rate() * 100.0);
+  out << sprintf_str("  %-26s %14s   hit rate %5.1f%%\n",
+                     "L1 accesses:", with_commas(results.l1.accesses).c_str(),
+                     results.l1.hit_rate() * 100.0);
   if (results.has_l2) {
-    out << sprintf_str("  %-26s %14s   hit rate %5.1f%%\n", "L2 accesses:",
-                       with_commas(results.l2.accesses).c_str(), results.l2.hit_rate() * 100.0);
+    out << sprintf_str("  %-26s %14s   hit rate %5.1f%%\n",
+                       "L2 accesses:", with_commas(results.l2.accesses).c_str(),
+                       results.l2.hit_rate() * 100.0);
   }
   out << sprintf_str("  %-26s %14s\n", "DRAM accesses:",
                      with_commas(results.memory.reads + results.memory.writes).c_str());
-  out << sprintf_str("  %-26s %14.1f cycles\n", "Average memory latency:",
-                     results.average_memory_latency);
-  out << sprintf_str("  %-26s %14.2f\n", "Avg outstanding misses:",
-                     results.average_outstanding_misses);
+  out << sprintf_str("  %-26s %14.1f cycles\n",
+                     "Average memory latency:", results.average_memory_latency);
+  out << sprintf_str("  %-26s %14.2f\n",
+                     "Avg outstanding misses:", results.average_outstanding_misses);
   out << sprintf_str("  %-26s %14s   %.1f GB/s (%.1f%% of %.1f GB/s)\n", "DRAM traffic:",
                      format_bytes(results.memory.bytes_read + results.memory.bytes_written).c_str(),
                      results.achieved_bandwidth_gbps, results.bandwidth_utilization * 100.0,

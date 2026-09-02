@@ -16,8 +16,7 @@ bool is_power_of_two(uint64_t v) { return v != 0 && (v & (v - 1)) == 0; }
 // leftover keys can be reported as errors.
 class ObjectReader {
  public:
-  ObjectReader(const Json& object, std::string path)
-      : object_(object), path_(std::move(path)) {
+  ObjectReader(const Json& object, std::string path) : object_(object), path_(std::move(path)) {
     if (!object_.is_object()) fail(path_ + ": expected a JSON object");
   }
 
