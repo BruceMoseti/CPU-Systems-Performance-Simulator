@@ -1,6 +1,8 @@
 #include "config.hpp"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <sstream>
 #include <string_view>
 #include <vector>
@@ -24,13 +26,23 @@ class ObjectReader {
     const Json* value = take(key);
     if (value == nullptr) return fallback;
     if (!value->is_number()) fail(where(key) + ": expected a number");
-    return value->as_number();
+    const double number = value->as_number();
+    // An overflowing exponent parses as infinity, which would otherwise pass the
+    // positivity checks below and then propagate silently: an infinite clock
+    // frequency yields a zero runtime and an infinite achieved bandwidth.
+    if (!std::isfinite(number)) fail(where(key) + ": expected a finite number");
+    return number;
   }
 
   uint32_t integer(std::string_view key, uint32_t fallback) {
     const double value = number(key, static_cast<double>(fallback));
-    if (value < 0 || value != static_cast<double>(static_cast<uint32_t>(value))) {
-      fail(where(key) + ": expected a non-negative integer");
+    // The range has to be checked before the conversion, not after: converting a
+    // double that does not fit the destination type is undefined behaviour, so
+    // an infinity or a huge exponent in a config file has to be rejected while
+    // it is still a double. Writing the test as a negated conjunction also
+    // rejects NaN, for which every comparison is false.
+    if (!(value >= 0.0 && value <= static_cast<double>(UINT32_MAX)) || value != std::floor(value)) {
+      fail(where(key) + ": expected a whole number between 0 and " + std::to_string(UINT32_MAX));
     }
     return static_cast<uint32_t>(value);
   }
@@ -119,7 +131,10 @@ Config Config::from_json(const Json& root) {
     cpu_reader.finish();
     if (config.cpu.frequency_ghz <= 0) fail("cpu.frequency_ghz must be positive");
     if (config.cpu.issue_width == 0) fail("cpu.issue_width must be at least 1");
-    if (config.cpu.base_cpi < 0) fail("cpu.base_cpi must not be negative");
+    // The upper bound keeps the fixed-point CPI conversion in range; see Cpu.
+    if (config.cpu.base_cpi < 0 || config.cpu.base_cpi > kMaxBaseCpi) {
+      fail("cpu.base_cpi must be between 0 and " + std::to_string(kMaxBaseCpi));
+    }
     if (config.cpu.mshrs == 0) fail("cpu.mshrs must be at least 1");
   }
 

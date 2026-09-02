@@ -60,6 +60,27 @@ TEST(config_rejects_impossible_geometry) {
   CHECK_THROWS(Config::from_json(Json::parse(R"({"cpu": {"issue_width": 2.5}})")));
 }
 
+// An out-of-range value has to be rejected while it is still a double.
+// Converting one that does not fit the destination integer type is undefined
+// behaviour, so validating after the conversion would be validating a value the
+// compiler was free to invent.
+TEST(config_rejects_numbers_that_do_not_fit) {
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"l1": {"size_kb": 1e400}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"l1": {"size_kb": 1e300}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"l1": {"size_kb": 5000000000}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"l1": {"size_kb": -1}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"cpu": {"mshrs": 1e300}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"memory": {"latency_cycles": 1e400}})")));
+  // Infinities pass a bare positivity test, then silently poison the results:
+  // an infinite clock gives a zero runtime and an infinite achieved bandwidth.
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"cpu": {"frequency_ghz": 1e400}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"cpu": {"base_cpi": 1e400}})")));
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"memory": {"bandwidth_gbps": 1e400}})")));
+  // base_cpi is bounded so that Cpu::issue can convert its cycle debt without a
+  // range check on the hot path.
+  CHECK_THROWS(Config::from_json(Json::parse(R"({"cpu": {"base_cpi": 1e9}})")));
+}
+
 TEST(config_survives_a_json_round_trip) {
   const Config original = Config::from_json(Json::parse(R"({
     "cpu": {"frequency_ghz": 3.0, "issue_width": 6, "mshrs": 12},

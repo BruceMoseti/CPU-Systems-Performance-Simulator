@@ -162,6 +162,14 @@ void append_escaped(std::string& out, const std::string& value) {
 }
 
 void append_number(std::string& out, double value) {
+  // JSON has no literal for infinity or NaN, and printing one would produce a
+  // document that no conforming parser will read back, including the Python
+  // layer that consumes these results. Configuration validation rejects
+  // non-finite inputs, so this is a backstop rather than an expected path.
+  if (!std::isfinite(value)) {
+    out += "null";
+    return;
+  }
   char buffer[40];
   // Integral values are printed without a decimal point: cycle and instruction
   // counts read much better as 4830221 than as 4830221.0.

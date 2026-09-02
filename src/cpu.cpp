@@ -5,7 +5,12 @@
 namespace perfsim {
 
 Cpu::Cpu(const CpuConfig& config, MemoryHierarchy& hierarchy)
-    : hierarchy_(hierarchy), compute_cpi_(config.compute_cpi()), mshrs_(config.mshrs) {}
+    : hierarchy_(hierarchy),
+      // base_cpi is bounded by the configuration reader, so this conversion is
+      // in range; see kMaxBaseCpi.
+      compute_cpi_scaled_(static_cast<uint64_t>(
+          config.compute_cpi() * static_cast<double>(uint64_t{1} << kCpiFractionBits) + 0.5)),
+      mshrs_(config.mshrs) {}
 
 void Cpu::stall(uint64_t cycles, StallBucket bucket) {
   if (cycles == 0) return;
@@ -43,10 +48,10 @@ void Cpu::sift_down(size_t root) {
 
 void Cpu::issue(uint64_t instructions) {
   stats_.instructions += instructions;
-  compute_debt_ += static_cast<double>(instructions) * compute_cpi_;
-  const uint64_t whole = static_cast<uint64_t>(compute_debt_);
+  compute_debt_ += instructions * compute_cpi_scaled_;
+  const uint64_t whole = compute_debt_ >> kCpiFractionBits;
   if (whole > 0) {
-    compute_debt_ -= static_cast<double>(whole);
+    compute_debt_ -= whole << kCpiFractionBits;
     stats_.cycles += whole;
     stats_.compute_cycles += whole;
   }
@@ -111,8 +116,8 @@ void Cpu::drain() {
   }
 
   // A trace shorter than the issue width would otherwise finish in zero cycles.
-  if (compute_debt_ > 0.0) {
-    compute_debt_ = 0.0;
+  if (compute_debt_ > 0) {
+    compute_debt_ = 0;
     ++stats_.cycles;
     ++stats_.compute_cycles;
   }

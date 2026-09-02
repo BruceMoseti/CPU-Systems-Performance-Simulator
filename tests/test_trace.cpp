@@ -110,6 +110,14 @@ TEST(trace_reader_rejects_malformed_records) {
   CHECK_THROWS(read_all(no_operand));
   std::filesystem::remove(no_operand);
 
+  // A 64-bit address is valid and must survive the parser intact.
+  const std::string big_address = temp_path("perfsim_big_address.trace");
+  write_text(big_address, "R 0xFFFFFFFFFFFFFF00\n");
+  const std::vector<TraceRecord> records = read_all(big_address);
+  CHECK_EQ(records.size(), 1u);
+  CHECK_EQ(records[0].value, 0xFFFFFFFFFFFFFF00ULL);
+  std::filesystem::remove(big_address);
+
   CHECK_THROWS(TraceReader("/nonexistent/perfsim/trace.txt"));
 }
 

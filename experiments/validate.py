@@ -83,16 +83,24 @@ def host_model_name() -> str:
     return match.group(1).strip() if match else platform.processor() or "unknown"
 
 
-def run_native(workload: str, params: dict, repeats: int) -> float:
-    """Runs a native kernel and returns the best kernel-only time in seconds."""
+def run_native(workload: str, params: dict, repeats: int) -> tuple[float, float]:
+    """Times a native kernel, returning (fastest seconds, spread).
+
+    The fastest run is the best estimate of the kernel's own cost, since noise on
+    a shared machine only ever adds time. The spread is reported alongside it so
+    that a model/measurement ratio can be read against the precision of the
+    measurement behind it.
+    """
     command = [str(perfsim.TRACEGEN), workload, "--mode", "native"]
     for key, value in params.items():
         command += [f"--{key}", str(value)]
-    best = float("inf")
+    times = []
     for _ in range(repeats):
         completed = subprocess.run(command, check=True, capture_output=True, text=True)
-        best = min(best, json.loads(completed.stdout)["seconds"])
-    return best
+        times.append(json.loads(completed.stdout)["seconds"])
+    fastest = min(times)
+    spread = (max(times) - fastest) / fastest if fastest > 0 else 0.0
+    return fastest, spread
 
 
 def measure_latency_curve(frequency_ghz: float, repeats: int) -> list[dict]:
@@ -106,7 +114,9 @@ def measure_latency_curve(frequency_ghz: float, repeats: int) -> list[dict]:
         nodes = working_set // 8
         iterations = max(1, TARGET_HOPS // nodes)
         hops = nodes * iterations
-        seconds = run_native("pointer_chase", {"n": nodes, "iterations": iterations}, repeats)
+        seconds, spread = run_native(
+            "pointer_chase", {"n": nodes, "iterations": iterations}, repeats
+        )
         ns_per_hop = seconds / hops * 1e9
         curve.append(
             {
@@ -114,11 +124,12 @@ def measure_latency_curve(frequency_ghz: float, repeats: int) -> list[dict]:
                 "hops": hops,
                 "ns_per_hop": ns_per_hop,
                 "cycles_per_hop": ns_per_hop * frequency_ghz,
+                "spread": spread,
             }
         )
         print(
             f"  {working_set // 1024:>7} KB   {ns_per_hop:>7.2f} ns/hop"
-            f"   {ns_per_hop * frequency_ghz:>7.1f} cycles"
+            f"   {ns_per_hop * frequency_ghz:>7.1f} cycles   +/-{spread * 100:>4.1f}%"
         )
     return curve
 
@@ -163,12 +174,13 @@ def compare_workloads(config: dict, repeats: int) -> list[dict]:
     rows = []
     for name, spec in perfsim.WORKLOADS.items():
         params = {k: v for k, v in spec.items() if k != "workload"}
-        native_seconds = run_native(spec["workload"], params, repeats)
+        native_seconds, spread = run_native(spec["workload"], params, repeats)
         result = perfsim.simulate(name, config)
         rows.append(
             {
                 "workload": name,
                 "native_ms": native_seconds * 1e3,
+                "native_spread": spread,
                 "model_ms": result["seconds"] * 1e3,
                 "ratio": result["seconds"] / native_seconds if native_seconds else 0.0,
                 "model_ipc": result["ipc"],
@@ -248,13 +260,17 @@ def main() -> int:
     print("\nPredicted against measured runtime")
     print("----------------------------------")
     rows = compare_workloads(config, args.repeats)
-    print(f"  {'workload':<16}{'native (ms)':>13}{'model (ms)':>12}{'model/native':>14}"
-          f"   model bottleneck")
+    repeats = args.repeats
+    print(f"  {'workload':<16}{'native (ms)':>13}{'spread':>9}{'model (ms)':>12}"
+          f"{'model/native':>14}   model bottleneck")
     for entry in rows:
         print(
-            f"  {entry['workload']:<16}{entry['native_ms']:>13.1f}{entry['model_ms']:>12.1f}"
+            f"  {entry['workload']:<16}{entry['native_ms']:>13.2f}"
+            f"{entry['native_spread'] * 100:>8.1f}%{entry['model_ms']:>12.2f}"
             f"{entry['ratio']:>13.2f}x   {entry['bottleneck']}"
         )
+    print(f"\n  Native times are the fastest of {repeats} runs; spread is the range across")
+    print("  them, so a ratio is only meaningful to about that precision.")
 
     print("\nRelative comparisons (absolute modelling error cancels out)")
     print("-----------------------------------------------------------")

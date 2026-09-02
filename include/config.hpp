@@ -8,6 +8,11 @@
 
 namespace perfsim {
 
+// Upper bound on base_cpi. A cycles-per-instruction figure this large is not a
+// machine anyone would model; the bound exists so that the CPU model can convert
+// the configured CPI into its fixed-point representation in range.
+constexpr double kMaxBaseCpi = 1e6;
+
 struct CacheConfig {
   std::string name;
   bool enabled = true;

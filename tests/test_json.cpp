@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "json.hpp"
 #include "test_util.hpp"
 
@@ -50,6 +52,19 @@ TEST(json_prints_integral_numbers_without_a_decimal_point) {
   root.set("cycles", Json::number(4830221));
   const std::string text = root.dump(0);
   CHECK_EQ(text, std::string("{\"cycles\":4830221}"));
+}
+
+// JSON has no literal for infinity or NaN, so emitting one would produce a
+// document that no conforming parser reads back, including the Python layer.
+TEST(json_writes_non_finite_numbers_as_null) {
+  Json root = Json::object();
+  root.set("infinite", Json::number(std::numeric_limits<double>::infinity()));
+  root.set("negative", Json::number(-std::numeric_limits<double>::infinity()));
+  root.set("undefined", Json::number(std::numeric_limits<double>::quiet_NaN()));
+  const std::string text = root.dump(0);
+  CHECK_EQ(text, std::string("{\"infinite\":null,\"negative\":null,\"undefined\":null}"));
+  // The point of writing null is that the document stays parseable.
+  CHECK(Json::parse(text).find("infinite")->is_null());
 }
 
 TEST(json_keeps_object_keys_in_insertion_order) {

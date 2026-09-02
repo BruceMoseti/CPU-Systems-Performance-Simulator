@@ -73,6 +73,13 @@ class Cpu {
     double queue_fraction = 0.0;
   };
 
+  // Fractional cycles are carried in fixed point, in units of 2^-32 of a cycle.
+  // Integer arithmetic keeps the hottest function in the simulator free of a
+  // double-to-integer conversion, which is undefined rather than merely
+  // inaccurate once the value exceeds the destination range. It is also exact
+  // for every power-of-two issue width, which is the common case.
+  static constexpr int kCpiFractionBits = 32;
+
   void issue(uint64_t instructions);
   void access(uint64_t address, bool is_write, bool dependent);
   void stall(uint64_t cycles, StallBucket bucket);
@@ -80,10 +87,10 @@ class Cpu {
   void sift_down(size_t root);
 
   MemoryHierarchy& hierarchy_;
-  double compute_cpi_;
-  // Fractional cycle carried between instructions so that, for example, four
+  uint64_t compute_cpi_scaled_;
+  // Cycle debt carried between instructions so that, for example, four
   // instructions on a 4-wide machine cost exactly one cycle.
-  double compute_debt_ = 0.0;
+  uint64_t compute_debt_ = 0;
   // A binary min-heap on free_at, so the entry that frees up soonest is always
   // at index 0. Every miss needs that entry, and a linear scan over it was the
   // single hottest loop in the simulator. MSHRs are interchangeable, so which
