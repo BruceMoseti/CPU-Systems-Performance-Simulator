@@ -10,9 +10,9 @@ tooling to run architecture experiments against it. It answers one question:
 > most?
 
 Two workloads can be indistinguishable in a cache simulator and still need
-completely different hardware. The two on the left below miss L1 on more than
-99.5% of accesses and both wait about 185 cycles for memory, yet one takes 16×
-longer to do the same work:
+completely different hardware. The `random_access` and `pointer_chase` bars below
+both miss L1 on more than 99.5% of accesses and both wait about 185 cycles for
+memory, yet one takes 16× longer to do the same work:
 
 ![Where the cycles go](results/figures/stall_breakdown.png)
 
@@ -666,6 +666,12 @@ way that still produces plausible-looking numbers. What guards against that:
   before and after, which is what caught that the stall sub-buckets shift by
   0.026% when the MSHR heap breaks a tie differently.
 
+CI keeps these honest: it builds Release, builds again under the sanitizers and
+builds with clang, runs the tests in each, exercises the binaries over every
+config and workload, checks that a malformed trace is rejected rather than
+crashing, checks that the naive and blocked matrix kernels still agree to the
+last bit, and checks that the sweep output is still reproducible.
+
 ## What is deliberately not modelled
 
 Each of these would change the numbers above, and none is simulated:
@@ -702,10 +708,24 @@ ctest --test-dir build
 cd experiments
 python3 run_experiments.py --all     # 372 simulations -> results/*.csv
 python3 plot.py --all                # -> results/figures/
-python3 validate.py --repeats 3      # -> results/validation.json
+python3 validate.py --repeats 9      # -> results/validation.json
 python3 benchmark.py --label after   # -> results/benchmark_after.json
 python3 analyze.py --workload all    # diagnosis for every workload
 ```
+
+To reproduce the correctness checks:
+
+```bash
+cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=g++ \
+      -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined,float-cast-overflow \
+                         -fno-sanitize-recover=all -O1"
+cmake --build build-asan -j && ctest --test-dir build-asan
+clang-format --dry-run --Werror src/*.cpp include/*.hpp
+```
+
+`validate.py` takes more repeats than looks necessary because the shorter
+kernels are noisy on a shared machine: `sequential` runs in 0.32 ms and varies
+by 18% run to run, which is why the spread is reported next to every ratio.
 
 Traces are generated on demand into `traces/` and are not committed (the two
 matrix traces are ~200 MB each). A sidecar `.params` file records what each
